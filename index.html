@@ -443,6 +443,130 @@
     line-height: 1.5;
   }
 
+  /* Weather */
+  .weather-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: var(--gray);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .weather-icon { font-size: 13px; line-height: 1; }
+
+  .weather-temp { font-weight: 600; font-size: 10px; }
+
+  .modal-weather {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #F0F9FF;
+    border-radius: 10px;
+    margin-bottom: 14px;
+  }
+
+  .modal-weather .weather-icon { font-size: 28px; }
+
+  .modal-weather-detail {
+    flex: 1;
+  }
+
+  .modal-weather-detail .temp-main {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dark);
+  }
+
+  .modal-weather-detail .temp-range {
+    font-size: 12px;
+    color: var(--gray);
+  }
+
+  .modal-weather-detail .weather-desc {
+    font-size: 12px;
+    color: #0369A1;
+    font-weight: 500;
+  }
+
+  .rain-warn {
+    color: #DC2626;
+    font-weight: 600;
+    font-size: 11px;
+  }
+
+  /* Record banner */
+  .record-banner {
+    max-width: 1200px;
+    margin: 8px auto 0;
+    padding: 10px 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .record-rank {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dark);
+  }
+
+  .record-rank .rank-num {
+    font-size: 22px;
+    color: var(--primary);
+  }
+
+  .record-stat {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .record-stat .win { color: #2563EB; }
+  .record-stat .lose { color: #DC2626; }
+  .record-stat .draw { color: var(--gray); }
+  .record-stat .pct { color: var(--dark); }
+
+  .record-streak {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .record-streak.w-streak { background: #DBEAFE; color: #1D4ED8; }
+  .record-streak.l-streak { background: #FEE2E2; color: #DC2626; }
+
+  /* Game result badge on calendar */
+  .result-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 0 4px;
+    border-radius: 3px;
+    margin-left: 2px;
+  }
+
+  .result-badge.win { background: #DBEAFE; color: #1D4ED8; }
+  .result-badge.lose { background: #FEE2E2; color: #DC2626; }
+
+  .result-score {
+    font-size: 9px;
+    color: var(--gray);
+    margin-left: 1px;
+  }
+
   /* Upcoming section */
   .upcoming-banner {
     background: white;
@@ -542,6 +666,8 @@
     <h1><span class="eagle-icon">&#x1F985;</span> 한화이글스 예매 캘린더</h1>
   </div>
 </div>
+
+<div class="record-banner" id="recordBanner"></div>
 
 <div class="upcoming-banner" id="upcomingBanner"></div>
 
@@ -902,6 +1028,116 @@ const GAMES = [
   { date: '2026-09-06', time: '14:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
 ];
 
+// ===================== RESULTS & STANDINGS =====================
+
+// 한화이글스 경기 결과 (이미 끝난 경기)
+const GAME_RESULTS = {
+  '2026-03-28': { score: '10-9', result: 'W', note: '연장 11회' },
+  '2026-03-29': { score: '10-4', result: 'W' },
+  '2026-03-31': { score: '4-9', result: 'L' },
+  '2026-04-01': { score: '11-14', result: 'L' },
+  '2026-04-02': { score: '8-13', result: 'L' },
+  '2026-04-03': { score: '11-6', result: 'W' },
+  '2026-04-04': { score: '9-3', result: 'W' },
+  '2026-04-05': { score: '0-8', result: 'L' },
+  '2026-04-07': { score: '6-2', result: 'W' },
+  '2026-04-08': { score: '4-3', result: 'W' },
+};
+
+// 현재 순위 (4/8 기준)
+const STANDINGS = {
+  rank: 3,
+  wins: 6,
+  losses: 4,
+  draws: 0,
+  pct: '.600',
+  gb: '1',
+  streak: 'W2', // 2연승
+  lastUpdate: '4/8',
+};
+
+function getGameResult(dateStr) {
+  return GAME_RESULTS[dateStr] || null;
+}
+
+function renderRecordBanner() {
+  const s = STANDINGS;
+  const streakClass = s.streak.startsWith('W') ? 'w-streak' : 'l-streak';
+  const streakLabel = s.streak.startsWith('W') ? s.streak.replace('W','') + '연승' : s.streak.replace('L','') + '연패';
+
+  document.getElementById('recordBanner').innerHTML = `
+    <div class="record-rank"><span class="rank-num">${s.rank}위</span> / 10팀</div>
+    <div class="record-stat">
+      <span class="win">${s.wins}승</span>
+      <span class="lose">${s.losses}패</span>
+      ${s.draws ? `<span class="draw">${s.draws}무</span>` : ''}
+      <span class="pct">(${s.pct})</span>
+    </div>
+    <span class="record-streak ${streakClass}">${streakLabel}</span>
+    <span style="font-size:11px;color:var(--gray);">${s.lastUpdate} 기준</span>
+  `;
+}
+
+// ===================== WEATHER =====================
+const VENUE_COORDS = {
+  '대전': { lat: 36.35, lon: 127.38 },
+  '잠실': { lat: 37.51, lon: 127.07 },
+  '수원': { lat: 37.26, lon: 127.03 },
+  '인천': { lat: 37.45, lon: 126.70 },
+};
+
+// WMO Weather Code → emoji + 한글
+function weatherCodeToInfo(code) {
+  if (code === 0) return { icon: '\u2600\uFE0F', desc: '맑음' };
+  if (code <= 3) return { icon: '\u26C5', desc: '구름 조금' };
+  if (code <= 48) return { icon: '\u2601\uFE0F', desc: '흐림' };
+  if (code <= 55) return { icon: '\uD83C\uDF26\uFE0F', desc: '이슬비' };
+  if (code <= 57) return { icon: '\uD83C\uDF28\uFE0F', desc: '진눈깨비' };
+  if (code <= 65) return { icon: '\uD83C\uDF27\uFE0F', desc: '비' };
+  if (code <= 67) return { icon: '\uD83C\uDF28\uFE0F', desc: '진눈깨비' };
+  if (code <= 77) return { icon: '\u2744\uFE0F', desc: '눈' };
+  if (code <= 82) return { icon: '\uD83C\uDF27\uFE0F', desc: '소나기' };
+  if (code <= 86) return { icon: '\u2744\uFE0F', desc: '눈보라' };
+  if (code <= 99) return { icon: '\u26C8\uFE0F', desc: '뇌우' };
+  return { icon: '\u2601\uFE0F', desc: '흐림' };
+}
+
+// 날씨 캐시: { 'venue-date': { icon, desc, tempMax, tempMin, rain } }
+let weatherCache = {};
+let weatherLoaded = false;
+
+async function fetchWeather() {
+  const coords = Object.entries(VENUE_COORDS);
+  const promises = coords.map(async ([venue, { lat, lon }]) => {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia/Seoul&forecast_days=16`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.daily) {
+        data.daily.time.forEach((date, i) => {
+          const code = data.daily.weather_code[i];
+          const info = weatherCodeToInfo(code);
+          weatherCache[`${venue}-${date}`] = {
+            icon: info.icon,
+            desc: info.desc,
+            tempMax: Math.round(data.daily.temperature_2m_max[i]),
+            tempMin: Math.round(data.daily.temperature_2m_min[i]),
+            rain: data.daily.precipitation_probability_max[i] || 0,
+          };
+        });
+      }
+    } catch (e) { /* 날씨 실패해도 캘린더는 정상 동작 */ }
+  });
+  await Promise.all(promises);
+  weatherLoaded = true;
+  renderCalendar();
+}
+
+function getWeather(venue, date) {
+  const v = venue === '잠실' ? '잠실' : venue;
+  return weatherCache[`${v}-${date}`] || null;
+}
+
 // ===================== STATE =====================
 let currentYear = 2026;
 let currentMonth = new Date().getMonth(); // 0-indexed
@@ -983,6 +1219,7 @@ function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
   const label = document.getElementById('monthLabel');
   label.textContent = `${currentYear}년 ${currentMonth + 1}월`;
+  const todayStr = dateStr(today.getFullYear(), today.getMonth(), today.getDate());
 
   const firstDay = new Date(currentYear, currentMonth, 1);
   const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -1048,23 +1285,40 @@ function renderCalendar() {
     if (holiday) html += ` <span class="holiday-name">${holiday}</span>`;
     html += `</div>`;
 
-    // Game events
-    const dayGames = gameEvents[cellDate] || [];
-    dayGames.forEach(g => {
-      const venueLabel = g.homeAway === 'HOME' ? '홈' : g.venue;
-      const isEve = !isWeekendOrHoliday(g.date) && isDayBeforeOffDay(g.date);
-      const eveClass = isEve ? ' eve-game' : '';
-      const eveBadge = isEve ? ' <span class="eve-badge">전야</span>' : '';
-      html += `<div class="event-tag game${eveClass}" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>`
-        + `${g.time} vs ${g.opponent} <span class="venue-badge">${venueLabel}</span>${eveBadge}</div>`;
-    });
+    const isPast = new Date(cellDate) < new Date(todayStr);
 
-    // Ticket events
-    const dayTickets = ticketEvents[cellDate] || [];
-    dayTickets.forEach(t => {
-      html += `<div class="event-tag ticket" onclick='showTicketDetail(${JSON.stringify(t).replace(/'/g, "\\'")})'>`
-        + `${t.time} 예매오픈 <span class="venue-badge">${t.game.opponent}</span></div>`;
-    });
+    if (isPast || cellDate === todayStr) {
+      // 지난 날짜 + 오늘: 결과만 심플 텍스트로 (필터 무관, 전체 경기)
+      const allDayGames = GAMES.filter(g => g.date === cellDate);
+      allDayGames.forEach(g => {
+        const gr = getGameResult(g.date);
+        if (gr) {
+          const color = gr.result === 'W' ? '#1D4ED8' : '#DC2626';
+          const label = gr.result === 'W' ? 'W' : 'L';
+          html += `<div style="font-size:10px;color:${color};font-weight:600;line-height:1.5;cursor:pointer;" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>vs ${g.opponent} ${label} ${gr.score}</div>`;
+        }
+      });
+    } else {
+      // 미래: 기존 경기/예매 태그
+      const dayGames = gameEvents[cellDate] || [];
+      dayGames.forEach(g => {
+        const venueLabel = g.homeAway === 'HOME' ? '홈' : g.venue;
+        const isEve = !isWeekendOrHoliday(g.date) && isDayBeforeOffDay(g.date);
+        const eveClass = isEve ? ' eve-game' : '';
+        const eveBadge = isEve ? ' <span class="eve-badge">전야</span>' : '';
+        const w = getWeather(g.venue, g.date);
+        const weatherHtml = w ? ` <span class="weather-badge"><span class="weather-icon">${w.icon}</span><span class="weather-temp">${w.tempMax}°</span></span>` : '';
+        html += `<div class="event-tag game${eveClass}" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>`
+          + `${g.time} vs ${g.opponent} <span class="venue-badge">${venueLabel}</span>${eveBadge}${weatherHtml}</div>`;
+      });
+
+      // Ticket events (미래만)
+      const dayTickets = ticketEvents[cellDate] || [];
+      dayTickets.forEach(t => {
+        html += `<div class="event-tag ticket" onclick='showTicketDetail(${JSON.stringify(t).replace(/'/g, "\\'")})'>`
+          + `${t.time} 예매오픈 <span class="venue-badge">${t.game.opponent}</span></div>`;
+      });
+    }
 
     html += `</div>`;
   }
@@ -1096,11 +1350,11 @@ function renderUpcoming(filteredGames, ticketEvents) {
   }
 
   if (upcoming.length === 0) {
-    banner.innerHTML = `<h2>&#128197; 다가오는 일정</h2><p style="font-size:13px;color:var(--gray);">2주 내 해당되는 경기/예매 일정이 없습니다.</p>`;
+    banner.innerHTML = `<h2>다가오는 일정</h2><p style="font-size:13px;color:var(--gray);">2주 내 해당되는 경기/예매 일정이 없습니다.</p>`;
     return;
   }
 
-  let html = `<h2>&#128197; 다가오는 일정 (2주 내)</h2><div class="upcoming-list">`;
+  let html = `<h2>다가오는 일정 (2주 내)</h2><div class="upcoming-list">`;
   upcoming.slice(0, 8).forEach(item => {
     const d = new Date(item.date);
     const dayNames = ['일','월','화','수','목','금','토'];
@@ -1168,6 +1422,33 @@ function showGameDetail(game) {
   const tbUrl = getTicketbayUrl(game);
 
   let html = `<div class="modal-header"><h3>경기 상세 정보</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>`;
+
+  // 경기 결과 (지난 경기)
+  const gr = getGameResult(game.date);
+  if (gr) {
+    const rc = gr.result === 'W' ? 'win' : 'lose';
+    const resultText = gr.result === 'W' ? '승리' : '패배';
+    html += `<div class="modal-section" style="background:${gr.result === 'W' ? '#EFF6FF' : '#FEF2F2'}; text-align:center;">
+      <div style="font-size:22px;font-weight:800;color:${gr.result === 'W' ? '#1D4ED8' : '#DC2626'}">${resultText}</div>
+      <div style="font-size:18px;font-weight:700;margin-top:4px;">${gr.score}</div>
+      ${gr.note ? `<div style="font-size:12px;color:var(--gray);margin-top:2px;">${gr.note}</div>` : ''}
+    </div>`;
+  }
+
+  // 날씨 정보 (미래 경기만)
+  if (!gr) {
+    const w = getWeather(game.venue, game.date);
+    if (w) {
+      const rainWarn = w.rain >= 50 ? `<span class="rain-warn">&nbsp;&nbsp;&#9730; 강수확률 ${w.rain}% - 우천 주의!</span>` : '';
+      html += `<div class="modal-weather">
+        <span class="weather-icon">${w.icon}</span>
+        <div class="modal-weather-detail">
+          <span class="weather-desc">${w.desc}</span>${rainWarn}
+          <div><span class="temp-main">${w.tempMax}°</span> <span class="temp-range">/ ${w.tempMin}° (최저)</span></div>
+        </div>
+      </div>`;
+    }
+  }
 
   html += `<div class="modal-section game-info">
     <h4>&#9918; 경기 정보</h4>
@@ -1281,6 +1562,9 @@ function toggleFilter(btn) {
 currentYear = today.getFullYear();
 currentMonth = today.getMonth();
 renderCalendar();
+renderRecordBanner();
+// 날씨 데이터 비동기 로드 후 자동 갱신
+fetchWeather();
 </script>
 </body>
 </html>
