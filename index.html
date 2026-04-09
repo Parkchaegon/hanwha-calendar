@@ -689,7 +689,6 @@
 
   <div class="legend">
     <div class="legend-item"><div class="legend-dot game"></div>경기 일정</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--primary);border:1px dashed #9A3412;"></div>전야제</div>
     <div class="legend-item"><div class="legend-dot ticket"></div>예매 오픈</div>
     <div class="legend-item"><div class="legend-dot holiday"></div>공휴일</div>
   </div>
@@ -1305,7 +1304,7 @@ function renderCalendar() {
         const venueLabel = g.homeAway === 'HOME' ? '홈' : g.venue;
         const isEve = !isWeekendOrHoliday(g.date) && isDayBeforeOffDay(g.date);
         const eveClass = isEve ? ' eve-game' : '';
-        const eveBadge = isEve ? ' <span class="eve-badge">전야</span>' : '';
+        const eveBadge = '';
         const w = getWeather(g.venue, g.date);
         const weatherHtml = w ? ` <span class="weather-badge"><span class="weather-icon">${w.icon}</span><span class="weather-temp">${w.tempMax}°</span></span>` : '';
         html += `<div class="event-tag game${eveClass}" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>`
