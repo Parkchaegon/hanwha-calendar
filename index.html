@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한화이글스 경기 & 예매 캘린더</title>
+<style>
+  :root {
+    --primary: #F37321;
+    --primary-light: #FFF3E8;
+    --dark: #1a1a2e;
+    --gray: #6b7280;
+    --light-gray: #f3f4f6;
+    --white: #ffffff;
+    --border: #e5e7eb;
+    --game-bg: #FFF7ED;
+    --ticket-bg: #EFF6FF;
+    --holiday-bg: #FEF2F2;
+    --today-border: #F37321;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: var(--light-gray);
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--dark) 0%, #16213e 100%);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header h1 .eagle-icon { font-size: 24px; }
+
+  .nav-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .nav-btn:hover { background: rgba(255,255,255,0.25); }
+
+  .month-label {
+    font-size: 18px;
+    font-weight: 600;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .today-btn {
+    background: var(--primary);
+    border: none;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .today-btn:hover { background: #e0650f; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 12px;
+    padding: 10px 20px;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: var(--gray);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .legend-dot.game { background: var(--primary); }
+  .legend-dot.ticket { background: #3B82F6; }
+  .legend-dot.holiday { background: #EF4444; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 20px;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .filter-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .filter-chip.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  .filter-chip:hover { border-color: var(--primary); }
+
+  /* Calendar Grid */
+  .calendar-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px;
+  }
+
+  .weekday-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .weekday-header div {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 0;
+    color: var(--gray);
+  }
+
+  .weekday-header div:first-child { color: #EF4444; }
+  .weekday-header div:last-child { color: #3B82F6; }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .day-cell {
+    background: white;
+    border-radius: 8px;
+    min-height: 110px;
+    padding: 7px;
+    position: relative;
+    transition: box-shadow 0.2s;
+    border: 2px solid transparent;
+  }
+
+  .day-cell:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .day-cell.today { border-color: var(--today-border); }
+  .day-cell.other-month { opacity: 0.35; }
+  .day-cell.holiday-cell { background: var(--holiday-bg); }
+  .day-cell.weekend-cell:not(.holiday-cell) { background: #FAFAFA; }
+
+  .day-number {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .day-cell:nth-child(7n+1) .day-number { color: #EF4444; }
+  .day-cell:nth-child(7n) .day-number { color: #3B82F6; }
+
+  .holiday-name {
+    font-size: 10px;
+    color: #EF4444;
+    font-weight: 500;
+  }
+
+  /* Event tags */
+  .event-tag {
+    font-size: 11px;
+    padding: 4px 7px;
+    border-radius: 4px;
+    margin-bottom: 3px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+  }
+
+  .event-tag:hover { transform: scale(1.02); }
+
+  .event-tag.game {
+    background: var(--game-bg);
+    border-left: 3px solid var(--primary);
+    color: #9A3412;
+  }
+
+  .event-tag.game.eve-game {
+    background: #FFF3E8;
+    border-left: 3px dashed var(--primary);
+  }
+
+  .event-tag.ticket {
+    background: var(--ticket-bg);
+    border-left: 3px solid #3B82F6;
+    color: #1E40AF;
+  }
+
+  .eve-badge {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    padding: 0 4px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    margin-left: 2px;
+  }
+
+  .event-tag .venue-badge {
+    display: inline-block;
+    background: rgba(0,0,0,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    margin-left: 2px;
+  }
+
+  /* Tooltip / Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-header h3 { font-size: 18px; }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--gray);
+    padding: 4px;
+  }
+
+  .modal-section {
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .modal-section.game-info { background: var(--game-bg); }
+  .modal-section.ticket-info { background: var(--ticket-bg); }
+
+  .modal-section h4 {
+    font-size: 15px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .modal-section p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #374151;
+  }
+
+  .modal-section a {
+    color: #2563EB;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .modal-section a:hover { text-decoration: underline; }
+
+  .info-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+
+  .info-label {
+    color: var(--gray);
+    min-width: 60px;
+    font-weight: 500;
+  }
+
+  .info-value { color: var(--dark); font-weight: 500; }
+
+  /* Seat price table */
+  .seat-price-section {
+    margin-bottom: 14px;
+  }
+
+  .seat-price-section h4 {
+    font-size: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .seat-price-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .seat-price-table th {
+    background: #F3F4F6;
+    padding: 7px 8px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--gray);
+    border-bottom: 2px solid var(--border);
+  }
+
+  .seat-price-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .seat-price-table tr:hover { background: #F9FAFB; }
+
+  .seat-price-table .price {
+    font-weight: 600;
+    color: var(--dark);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .seat-price-table .seat-group {
+    background: #F8FAFC;
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 11px;
+  }
+
+  .seat-price-table .seat-group td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--primary);
+  }
+
+  .ticketbay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #10B981;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+    margin-top: 8px;
+  }
+
+  .ticketbay-btn:hover { background: #059669; text-decoration: none; }
+
+  .price-note {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* Upcoming section */
+  .upcoming-banner {
+    background: white;
+    margin: 12px auto;
+    max-width: 1200px;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .upcoming-banner h2 {
+    font-size: 16px;
+    color: var(--primary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .upcoming-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .upcoming-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    background: var(--light-gray);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .upcoming-date {
+    background: var(--primary);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    min-width: 55px;
+    text-align: center;
+  }
+
+  .upcoming-date.ticket-date {
+    background: #3B82F6;
+  }
+
+  .upcoming-detail { flex: 1; }
+  .upcoming-detail strong { color: var(--dark); }
+  .upcoming-type {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .upcoming-type.game { background: var(--game-bg); color: #9A3412; }
+  .upcoming-type.ticket { background: var(--ticket-bg); color: #1E40AF; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .day-cell { min-height: 75px; padding: 4px; }
+    .day-number { font-size: 12px; }
+    .event-tag { font-size: 10px; padding: 3px 5px; }
+    .event-tag .venue-badge { display: none; }
+    .header h1 { font-size: 17px; }
+    .legend { gap: 8px; padding: 8px 12px; }
+    .filter-bar { padding: 8px 12px; }
+    .calendar-container { padding: 6px; }
+  }
+
+  @media (max-width: 480px) {
+    .day-cell { min-height: 60px; padding: 3px; }
+    .event-tag { font-size: 9px; padding: 2px 4px; margin-bottom: 2px; }
+    .day-number { font-size: 11px; }
+    .holiday-name { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="eagle-icon">&#x1F985;</span> 한화이글스 예매 캘린더</h1>
+  <div class="nav-buttons">
+    <button class="today-btn" onclick="goToday()">오늘</button>
+    <button class="nav-btn" onclick="changeMonth(-1)">&#9664;</button>
+    <span class="month-label" id="monthLabel"></span>
+    <button class="nav-btn" onclick="changeMonth(1)">&#9654;</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot game"></div>경기 일정</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--primary);border:1px dashed #9A3412;"></div>전야제 (휴일/토 전날)</div>
+  <div class="legend-item"><div class="legend-dot ticket"></div>예매 오픈</div>
+  <div class="legend-item"><div class="legend-dot holiday"></div>공휴일</div>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <button class="filter-chip active" data-venue="all" onclick="toggleFilter(this)">전체</button>
+  <button class="filter-chip active" data-venue="대전" onclick="toggleFilter(this)">대전 (홈)</button>
+  <button class="filter-chip active" data-venue="잠실" onclick="toggleFilter(this)">잠실</button>
+  <button class="filter-chip active" data-venue="수원" onclick="toggleFilter(this)">수원</button>
+  <button class="filter-chip active" data-venue="인천" onclick="toggleFilter(this)">인천</button>
+</div>
+
+<div class="upcoming-banner" id="upcomingBanner"></div>
+
+<div class="calendar-container">
+  <div class="weekday-header">
+    <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+  </div>
+  <div class="calendar-grid" id="calendarGrid"></div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<script>
+// ===================== DATA =====================
+
+// 2026 공휴일 (KBO 시즌 중 해당하는 것 위주)
+const HOLIDAYS = {
+  '2026-03-01': '삼일절',
+  '2026-03-02': '삼일절 대체휴일',
+  '2026-05-05': '어린이날',
+  '2026-05-25': '부처님오신날 대체휴일',
+  '2026-06-06': '현충일',
+  '2026-08-15': '광복절',
+  '2026-08-17': '광복절 대체휴일',
+  '2026-09-24': '추석 연휴',
+  '2026-09-25': '추석',
+  '2026-09-26': '추석 연휴',
+  '2026-10-03': '개천절',
+  '2026-10-05': '개천절 대체휴일',
+  '2026-10-09': '한글날',
+};
+
+// 구단별 예매 정보
+const TICKET_INFO = {
+  '대전': {
+    team: '한화 이글스',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/63',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: '멤버십 선예매: D-8 20:00',
+  },
+  '잠실_LG': {
+    team: 'LG 트윈스',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/59',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: '연간회원 선예매: D-8 14:00',
+  },
+  '잠실_두산': {
+    team: '두산 베어스',
+    platform: 'NOL 티켓 (인터파크)',
+    url: 'https://ticket.interpark.com/',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: '베어스클럽 선예매: D-7 10:00',
+  },
+  '수원': {
+    team: 'KT 위즈',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/62',
+    daysBeforeOpen: 7,
+    openTime: '16:00',
+    note: '풀시즌권 회원 선예매: D-7 13:00',
+  },
+  '인천': {
+    team: 'SSG 랜더스',
+    platform: 'SSG.COM',
+    url: 'https://ticket.ssg.com/',
+    daysBeforeOpen: 5,
+    openTime: '11:00',
+    note: '멤버십 선예매: D-7~D-6 단계별 오픈',
+  },
+};
+
+// 티켓베이 구단별 카테고리 ID 및 상대팀 서브카테고리
+const TICKETBAY = {
+  baseUrl: 'https://www.ticketbay.co.kr/product',
+  // 한화 홈 (대전)
+  '대전': {
+    categoryId: 6545,
+    opponents: {
+      '두산': 298093, '키움': 298090, 'LG': 298097, 'NC': 298086,
+      'KT': 298081, 'KIA': 298084, '삼성': 298088, '롯데': 298065, 'SSG': 298078,
+    },
+  },
+  // 원정 경기는 해당 홈팀 카테고리
+  '잠실_LG':  { categoryId: 5690 },
+  '잠실_두산': { categoryId: 5698 },
+  '수원':     { categoryId: 5598 },
+  '인천':     { categoryId: 5696 },
+};
+
+function getTicketbayUrl(game) {
+  const key = getTicketKey(game);
+  const tb = TICKETBAY[key] || TICKETBAY[game.venue];
+  if (!tb) return null;
+  return `${TICKETBAY.baseUrl}/${tb.categoryId}/list/0`;
+}
+
+// 구장별 좌석 등급 & 정가 (액면가)
+const SEAT_PRICES = {
+  '대전': {
+    name: '대전 한화생명 이글스파크',
+    groups: [
+      { group: 'PREMIUM', seats: [
+        { name: '이닝스 VIP 라운지', price: 164500 },
+        { name: '이닝스 VIP 테라스', price: 127500 },
+        { name: '포수후면석', price: 81500 },
+      ]},
+      { group: 'SPECIAL', seats: [
+        { name: '스플래쉬 자쿠지', price: 71500 },
+        { name: '스플래쉬 탁자', price: 70000 },
+        { name: '스플래쉬 일반', price: 51500 },
+        { name: '중앙탁자석', price: 64500 },
+        { name: '중앙지정석', price: 54500 },
+      ]},
+      { group: '내야', seats: [
+        { name: '1루/3루 내야 탁자석 (1층)', price: 52500 },
+        { name: '1루/3루 내야 박스석', price: 46000 },
+        { name: '1루/3루 내야 탁자석 (4층)', price: 40000 },
+        { name: '1루/3루 내야 지정석 A', price: 25500 },
+        { name: '1루/3루 내야 지정석 B', price: 21500 },
+      ]},
+      { group: '외야 / 응원', seats: [
+        { name: '외야 커플석', price: 46000 },
+        { name: '외야 탁자석', price: 41000 },
+        { name: '외야잔디석', price: 31000 },
+        { name: '1루/3루 응원단석', price: 29000 },
+        { name: '외야 지정석', price: 16000 },
+      ]},
+    ],
+  },
+  '잠실': {
+    name: '잠실야구장',
+    groups: [
+      { group: 'PREMIUM', seats: [
+        { name: '테이블석', price: 90000 },
+        { name: '중앙지정석', price: 40000 },
+      ]},
+      { group: '내야', seats: [
+        { name: '1루/3루 블루석', price: 28000 },
+        { name: '1루/3루 레드석', price: 22000 },
+        { name: '1루/3루 네이비석', price: 18000 },
+      ]},
+      { group: '외야 / 응원', seats: [
+        { name: '외야 자유석', price: 13000 },
+        { name: '응원석', price: 11000 },
+      ]},
+    ],
+  },
+  '수원': {
+    name: '수원 KT위즈파크',
+    groups: [
+      { group: 'PREMIUM', seats: [
+        { name: 'KT스카이박스', price: 120000 },
+        { name: '중앙테이블석', price: 65000 },
+        { name: '익사이팅석', price: 50000 },
+      ]},
+      { group: '내야', seats: [
+        { name: '1루/3루 Y박스석', price: 35000 },
+        { name: '1루/3루 내야지정석', price: 22000 },
+      ]},
+      { group: '외야 / 응원', seats: [
+        { name: '외야 잔디석', price: 18000 },
+        { name: '외야 자유석', price: 14000 },
+        { name: '응원지정석', price: 12000 },
+      ]},
+    ],
+  },
+  '인천': {
+    name: '인천 SSG랜더스필드',
+    groups: [
+      { group: 'PREMIUM', seats: [
+        { name: '스카이박스', price: 150000 },
+        { name: '중앙프리미엄석', price: 55000 },
+        { name: '테이블석', price: 48000 },
+      ]},
+      { group: '내야', seats: [
+        { name: '1루/3루 지정석 A', price: 28000 },
+        { name: '1루/3루 지정석 B', price: 22000 },
+      ]},
+      { group: '외야 / 응원', seats: [
+        { name: '외야 자유석', price: 14000 },
+        { name: '외야 잔디석', price: 12000 },
+        { name: '응원석', price: 10000 },
+      ]},
+    ],
+  },
+};
+
+// 한화이글스 경기 일정
+// 전체 일정을 넣고 렌더링 시 필터링
+const GAMES = [
+  // === 3월 ===
+  { date: '2026-03-28', time: '14:00', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-03-29', time: '14:00', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-03-31', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
+  // === 4월 ===
+  { date: '2026-04-01', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-02', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-03', time: '18:30', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-04-04', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-04-05', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-04-07', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-04-08', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-04-09', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-04-10', time: '18:30', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-11', time: '14:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-12', time: '14:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-14', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-15', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-16', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-17', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
+  { date: '2026-04-18', time: '17:00', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
+  { date: '2026-04-19', time: '14:00', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
+  { date: '2026-04-21', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-04-22', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-04-23', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-04-24', time: '18:30', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-25', time: '17:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-26', time: '14:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-28', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-29', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-04-30', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  // === 5월 ===
+  { date: '2026-05-01', time: '18:30', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
+  { date: '2026-05-02', time: '17:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
+  { date: '2026-05-03', time: '14:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
+  { date: '2026-05-05', time: '14:00', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-05-06', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-05-07', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-05-08', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-09', time: '17:00', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-10', time: '14:00', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-12', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
+  { date: '2026-05-13', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
+  { date: '2026-05-14', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
+  { date: '2026-05-15', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-05-16', time: '17:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-05-17', time: '14:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-05-19', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-20', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-21', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-22', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-23', time: '17:00', opponent: '두산', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-24', time: '14:00', opponent: '두산', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-26', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
+  { date: '2026-05-27', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
+  { date: '2026-05-28', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
+  { date: '2026-05-29', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-30', time: '17:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-05-31', time: '14:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  // === 6월 ===
+  { date: '2026-06-02', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-03', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-04', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-05', time: '18:30', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-06-06', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-06-07', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-06-09', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-10', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-11', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-12', time: '18:30', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-13', time: '17:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-14', time: '14:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-16', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-06-17', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-06-18', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-06-19', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-20', time: '17:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-21', time: '14:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-06-23', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
+  { date: '2026-06-24', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
+  { date: '2026-06-25', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
+  { date: '2026-06-26', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-06-27', time: '17:00', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-06-28', time: '14:00', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  // === 7월 ===
+  { date: '2026-07-03', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-07-04', time: '17:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-07-05', time: '14:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-07-07', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-07-08', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-07-09', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
+  // 7/10-15 올스타 브레이크
+  { date: '2026-07-17', time: '18:30', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
+  { date: '2026-07-18', time: '17:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
+  { date: '2026-07-19', time: '14:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
+  { date: '2026-07-21', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
+  { date: '2026-07-22', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
+  { date: '2026-07-23', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
+  { date: '2026-07-24', time: '18:30', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-07-25', time: '17:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-07-26', time: '14:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-07-28', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-07-29', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-07-30', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
+  { date: '2026-07-31', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  // === 8월 ===
+  { date: '2026-08-01', time: '17:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-08-02', time: '14:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-08-04', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-05', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-06', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-07', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
+  { date: '2026-08-08', time: '17:00', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
+  { date: '2026-08-09', time: '14:00', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
+  { date: '2026-08-11', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-12', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-13', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-14', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-15', time: '14:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-16', time: '14:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-18', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-19', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-20', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-21', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-08-22', time: '17:00', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-08-23', time: '14:00', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
+  { date: '2026-08-25', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-08-26', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-08-27', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
+  { date: '2026-08-28', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-29', time: '17:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-08-30', time: '14:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
+  // === 9월 ===
+  { date: '2026-09-01', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-09-02', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-09-03', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
+  { date: '2026-09-04', time: '18:30', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-09-05', time: '17:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-09-06', time: '14:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+];
+
+// ===================== STATE =====================
+let currentYear = 2026;
+let currentMonth = new Date().getMonth(); // 0-indexed
+let activeVenues = new Set(['대전', '잠실', '수원', '인천']);
+const today = new Date();
+
+// ===================== HELPERS =====================
+function dateStr(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function isWeekend(dateObj) {
+  const day = dateObj.getDay();
+  return day === 0 || day === 6;
+}
+
+function isHoliday(ds) {
+  return HOLIDAYS[ds] !== undefined;
+}
+
+function isWeekendOrHoliday(ds) {
+  const d = new Date(ds);
+  return isWeekend(d) || isHoliday(ds);
+}
+
+// 다음날이 토요일 또는 공휴일인지 (전야제 경기)
+function isDayBeforeOffDay(ds) {
+  const d = new Date(ds);
+  const next = new Date(d);
+  next.setDate(next.getDate() + 1);
+  const nextStr = dateStr(next.getFullYear(), next.getMonth(), next.getDate());
+  return next.getDay() === 6 || isHoliday(nextStr);
+}
+
+function isTargetDay(ds) {
+  return isWeekendOrHoliday(ds) || isDayBeforeOffDay(ds);
+}
+
+// 접근 가능 구장 목록
+const ACCESSIBLE_VENUES = ['대전', '잠실', '수원', '인천'];
+
+function getFilteredGames() {
+  return GAMES.filter(g => {
+    const venueMatch = ACCESSIBLE_VENUES.includes(g.venue) && activeVenues.has(g.venue);
+    const targetDay = isTargetDay(g.date);
+    return venueMatch && targetDay;
+  });
+}
+
+function getTicketKey(game) {
+  if (game.venue === '잠실') {
+    if (game.opponent === 'LG') return '잠실_LG';
+    if (game.opponent === '두산') return '잠실_두산';
+    // LG/두산 홈경기 구분: 한화가 away이면 상대가 홈팀
+    return game.opponent === 'LG' ? '잠실_LG' : '잠실_두산';
+  }
+  return game.venue;
+}
+
+function getTicketOpenDate(game) {
+  const key = getTicketKey(game);
+  const info = TICKET_INFO[key];
+  if (!info) return null;
+  const gameDate = new Date(game.date);
+  const openDate = new Date(gameDate);
+  openDate.setDate(openDate.getDate() - info.daysBeforeOpen);
+  return {
+    date: dateStr(openDate.getFullYear(), openDate.getMonth(), openDate.getDate()),
+    time: info.openTime,
+    platform: info.platform,
+    url: info.url,
+    note: info.note,
+    game: game,
+  };
+}
+
+// ===================== RENDER =====================
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  const label = document.getElementById('monthLabel');
+  label.textContent = `${currentYear}년 ${currentMonth + 1}월`;
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  const startDow = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+
+  // Get prev month days
+  const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
+
+  // Get filtered games
+  const filteredGames = getFilteredGames();
+
+  // Build ticket open events for this month
+  const ticketEvents = {};
+  filteredGames.forEach(g => {
+    const to = getTicketOpenDate(g);
+    if (to) {
+      if (!ticketEvents[to.date]) ticketEvents[to.date] = [];
+      ticketEvents[to.date].push(to);
+    }
+  });
+
+  // Build game events index
+  const gameEvents = {};
+  filteredGames.forEach(g => {
+    if (!gameEvents[g.date]) gameEvents[g.date] = [];
+    gameEvents[g.date].push(g);
+  });
+
+  let html = '';
+  const totalCells = Math.ceil((startDow + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < totalCells; i++) {
+    const dayNum = i - startDow + 1;
+    let cellDate, cellDay, isOther = false;
+
+    if (dayNum < 1) {
+      cellDay = prevLastDay + dayNum;
+      cellDate = dateStr(currentYear, currentMonth - 1, cellDay);
+      isOther = true;
+    } else if (dayNum > daysInMonth) {
+      cellDay = dayNum - daysInMonth;
+      cellDate = dateStr(currentYear, currentMonth + 1, cellDay);
+      isOther = true;
+    } else {
+      cellDay = dayNum;
+      cellDate = dateStr(currentYear, currentMonth, cellDay);
+    }
+
+    const isToday = cellDate === dateStr(today.getFullYear(), today.getMonth(), today.getDate());
+    const holiday = HOLIDAYS[cellDate];
+    const dateObj = new Date(cellDate);
+    const isWknd = isWeekend(dateObj);
+
+    let classes = 'day-cell';
+    if (isOther) classes += ' other-month';
+    if (isToday) classes += ' today';
+    if (holiday) classes += ' holiday-cell';
+    else if (isWknd) classes += ' weekend-cell';
+
+    html += `<div class="${classes}">`;
+    html += `<div class="day-number">${cellDay}`;
+    if (holiday) html += ` <span class="holiday-name">${holiday}</span>`;
+    html += `</div>`;
+
+    // Game events
+    const dayGames = gameEvents[cellDate] || [];
+    dayGames.forEach(g => {
+      const venueLabel = g.homeAway === 'HOME' ? '홈' : g.venue;
+      const isEve = !isWeekendOrHoliday(g.date) && isDayBeforeOffDay(g.date);
+      const eveClass = isEve ? ' eve-game' : '';
+      const eveBadge = isEve ? ' <span class="eve-badge">전야</span>' : '';
+      html += `<div class="event-tag game${eveClass}" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>`
+        + `${g.time} vs ${g.opponent} <span class="venue-badge">${venueLabel}</span>${eveBadge}</div>`;
+    });
+
+    // Ticket events
+    const dayTickets = ticketEvents[cellDate] || [];
+    dayTickets.forEach(t => {
+      html += `<div class="event-tag ticket" onclick='showTicketDetail(${JSON.stringify(t).replace(/'/g, "\\'")})'>`
+        + `${t.time} 예매오픈 <span class="venue-badge">${t.game.opponent}</span></div>`;
+    });
+
+    html += `</div>`;
+  }
+
+  grid.innerHTML = html;
+  renderUpcoming(filteredGames, ticketEvents);
+}
+
+function renderUpcoming(filteredGames, ticketEvents) {
+  const banner = document.getElementById('upcomingBanner');
+  const todayStr = dateStr(today.getFullYear(), today.getMonth(), today.getDate());
+
+  // Collect upcoming events (next 14 days)
+  const upcoming = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const ds = dateStr(d.getFullYear(), d.getMonth(), d.getDate());
+
+    const dayGames = filteredGames.filter(g => g.date === ds);
+    dayGames.forEach(g => {
+      upcoming.push({ type: 'game', date: ds, data: g });
+    });
+
+    const dayTickets = ticketEvents[ds] || [];
+    dayTickets.forEach(t => {
+      upcoming.push({ type: 'ticket', date: ds, data: t });
+    });
+  }
+
+  if (upcoming.length === 0) {
+    banner.innerHTML = `<h2>&#128197; 다가오는 일정</h2><p style="font-size:13px;color:var(--gray);">2주 내 해당되는 경기/예매 일정이 없습니다.</p>`;
+    return;
+  }
+
+  let html = `<h2>&#128197; 다가오는 일정 (2주 내)</h2><div class="upcoming-list">`;
+  upcoming.slice(0, 8).forEach(item => {
+    const d = new Date(item.date);
+    const dayNames = ['일','월','화','수','목','금','토'];
+    const dateLabel = `${d.getMonth()+1}/${d.getDate()} (${dayNames[d.getDay()]})`;
+
+    if (item.type === 'game') {
+      const g = item.data;
+      html += `<div class="upcoming-item">
+        <span class="upcoming-date">${dateLabel}</span>
+        <span class="upcoming-detail"><strong>${g.time}</strong> vs ${g.opponent} @ ${g.venue}</span>
+        <span class="upcoming-type game">경기</span>
+      </div>`;
+    } else {
+      const t = item.data;
+      html += `<div class="upcoming-item">
+        <span class="upcoming-date ticket-date">${dateLabel}</span>
+        <span class="upcoming-detail"><strong>${t.time}</strong> ${t.game.date.slice(5)} ${t.game.opponent}전 예매오픈 (${t.platform})</span>
+        <span class="upcoming-type ticket">예매</span>
+      </div>`;
+    }
+  });
+  html += `</div>`;
+  banner.innerHTML = html;
+}
+
+// ===================== MODAL =====================
+function formatPrice(n) {
+  if (n >= 10000) {
+    const man = Math.floor(n / 10000);
+    const rest = n % 10000;
+    return rest ? `${man}만${rest.toLocaleString()}` : `${man}만`;
+  }
+  return n.toLocaleString();
+}
+
+function buildSeatPriceTable(venue) {
+  const venueKey = venue === '잠실' ? '잠실' : venue;
+  const sp = SEAT_PRICES[venueKey];
+  if (!sp) return '';
+
+  let html = `<div class="seat-price-section">
+    <h4>&#128176; 좌석별 정가 (${sp.name})</h4>
+    <table class="seat-price-table">
+    <thead><tr><th>좌석</th><th style="text-align:right">정가</th></tr></thead><tbody>`;
+
+  sp.groups.forEach(g => {
+    html += `<tr class="seat-group"><td colspan="2">${g.group}</td></tr>`;
+    g.seats.forEach(s => {
+      html += `<tr><td>${s.name}</td><td class="price">${formatPrice(s.price)}원</td></tr>`;
+    });
+  });
+
+  html += `</tbody></table>
+    <p class="price-note">* 정가(액면가) 기준입니다. 리셀 가격은 티켓베이에서 실시간 확인하세요.</p>
+  </div>`;
+  return html;
+}
+
+function showGameDetail(game) {
+  const key = getTicketKey(game);
+  const info = TICKET_INFO[key];
+  const to = getTicketOpenDate(game);
+  const tbUrl = getTicketbayUrl(game);
+
+  let html = `<div class="modal-header"><h3>경기 상세 정보</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>`;
+
+  html += `<div class="modal-section game-info">
+    <h4>&#9918; 경기 정보</h4>
+    <div class="info-row"><span class="info-label">날짜</span><span class="info-value">${game.date} (${['일','월','화','수','목','금','토'][new Date(game.date).getDay()]})</span></div>
+    <div class="info-row"><span class="info-label">시간</span><span class="info-value">${game.time}</span></div>
+    <div class="info-row"><span class="info-label">상대</span><span class="info-value">${game.opponent}</span></div>
+    <div class="info-row"><span class="info-label">장소</span><span class="info-value">${game.venue} (${game.homeAway === 'HOME' ? '홈' : '원정'})</span></div>
+  </div>`;
+
+  if (info && to) {
+    html += `<div class="modal-section ticket-info">
+      <h4>&#127915; 예매 정보</h4>
+      <div class="info-row"><span class="info-label">예매처</span><span class="info-value">${info.platform}</span></div>
+      <div class="info-row"><span class="info-label">오픈일</span><span class="info-value">${to.date} (${['일','월','화','수','목','금','토'][new Date(to.date).getDay()]})</span></div>
+      <div class="info-row"><span class="info-label">오픈시각</span><span class="info-value">${to.time}</span></div>
+      <div class="info-row"><span class="info-label">링크</span><span class="info-value"><a href="${info.url}" target="_blank">${info.platform} 바로가기</a></span></div>
+      <div class="info-row"><span class="info-label">참고</span><span class="info-value">${info.note}</span></div>
+    </div>`;
+  }
+
+  // 좌석별 가격표
+  html += buildSeatPriceTable(game.venue);
+
+  // 티켓베이 링크
+  if (tbUrl) {
+    html += `<div style="text-align:center; margin-top:4px;">
+      <a href="${tbUrl}" target="_blank" class="ticketbay-btn">&#127915; 티켓베이에서 리셀 티켓 확인</a>
+    </div>`;
+  }
+
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+}
+
+function showTicketDetail(ticket) {
+  const info = TICKET_INFO[getTicketKey(ticket.game)];
+  const game = ticket.game;
+
+  let html = `<div class="modal-header"><h3>예매 오픈 상세</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>`;
+
+  html += `<div class="modal-section ticket-info">
+    <h4>&#127915; 예매 오픈 정보</h4>
+    <div class="info-row"><span class="info-label">오픈일</span><span class="info-value">${ticket.date} (${['일','월','화','수','목','금','토'][new Date(ticket.date).getDay()]})</span></div>
+    <div class="info-row"><span class="info-label">오픈시각</span><span class="info-value">${ticket.time}</span></div>
+    <div class="info-row"><span class="info-label">예매처</span><span class="info-value"><a href="${ticket.url}" target="_blank">${ticket.platform}</a></span></div>
+    ${info ? `<div class="info-row"><span class="info-label">참고</span><span class="info-value">${info.note}</span></div>` : ''}
+  </div>`;
+
+  html += `<div class="modal-section game-info">
+    <h4>&#9918; 대상 경기</h4>
+    <div class="info-row"><span class="info-label">날짜</span><span class="info-value">${game.date} (${['일','월','화','수','목','금','토'][new Date(game.date).getDay()]})</span></div>
+    <div class="info-row"><span class="info-label">시간</span><span class="info-value">${game.time}</span></div>
+    <div class="info-row"><span class="info-label">상대</span><span class="info-value">${game.opponent}</span></div>
+    <div class="info-row"><span class="info-label">장소</span><span class="info-value">${game.venue} (${game.homeAway === 'HOME' ? '홈' : '원정'})</span></div>
+  </div>`;
+
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal')) {
+    document.getElementById('modal').classList.remove('active');
+  }
+}
+
+// ===================== NAVIGATION =====================
+function changeMonth(delta) {
+  currentMonth += delta;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+function goToday() {
+  currentYear = today.getFullYear();
+  currentMonth = today.getMonth();
+  renderCalendar();
+}
+
+function toggleFilter(btn) {
+  const venue = btn.dataset.venue;
+  if (venue === 'all') {
+    const allActive = activeVenues.size === 4;
+    if (allActive) {
+      activeVenues.clear();
+      document.querySelectorAll('.filter-chip:not([data-venue="all"])').forEach(c => c.classList.remove('active'));
+      btn.classList.remove('active');
+    } else {
+      ACCESSIBLE_VENUES.forEach(v => activeVenues.add(v));
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.add('active'));
+    }
+  } else {
+    if (activeVenues.has(venue)) {
+      activeVenues.delete(venue);
+      btn.classList.remove('active');
+    } else {
+      activeVenues.add(venue);
+      btn.classList.add('active');
+    }
+    // Update "all" chip
+    const allChip = document.querySelector('.filter-chip[data-venue="all"]');
+    if (activeVenues.size === 4) allChip.classList.add('active');
+    else allChip.classList.remove('active');
+  }
+  renderCalendar();
+}
+
+// ===================== INIT =====================
+// Start at current month
+currentYear = today.getFullYear();
+currentMonth = today.getMonth();
+renderCalendar();
+</script>
+</body>
+</html>
