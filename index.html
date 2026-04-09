@@ -32,23 +32,15 @@
   .header {
     background: linear-gradient(135deg, var(--dark) 0%, #16213e 100%);
     color: white;
-    padding: 10px 16px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    padding: 12px 16px;
+    text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
 
-  .header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
   .header h1 {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     white-space: nowrap;
@@ -60,16 +52,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    margin-top: 6px;
+    gap: 8px;
+    margin-bottom: 10px;
   }
 
   .nav-btn {
-    background: rgba(255,255,255,0.15);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
+    background: white;
+    border: 1.5px solid var(--border);
+    color: var(--dark);
+    width: 34px;
+    height: 34px;
     border-radius: 8px;
     font-size: 16px;
     cursor: pointer;
@@ -79,53 +71,43 @@
     transition: background 0.2s;
   }
 
-  .nav-btn:hover { background: rgba(255,255,255,0.25); }
+  .nav-btn:hover { background: var(--light-gray); }
 
   .month-label {
-    font-size: 16px;
-    font-weight: 600;
-    min-width: 100px;
+    font-size: 17px;
+    font-weight: 700;
+    min-width: 110px;
     text-align: center;
+    color: var(--dark);
   }
 
   .today-btn {
     background: var(--primary);
     border: none;
     color: white;
-    padding: 5px 12px;
+    padding: 6px 14px;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+    margin-left: 4px;
   }
 
   .today-btn:hover { background: #e0650f; }
 
-  /* PC에서는 헤더 1줄로 */
   @media (min-width: 769px) {
-    .header-top { justify-content: flex-start; }
     .header h1 { font-size: 20px; }
     .header h1 .eagle-icon { font-size: 24px; }
-    .nav-row {
-      margin-top: 0;
-      position: absolute;
-      right: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-    .header { position: sticky; padding: 14px 16px; }
-    .month-label { font-size: 18px; min-width: 120px; }
+    .month-label { font-size: 19px; min-width: 130px; }
     .nav-btn { width: 36px; height: 36px; font-size: 18px; }
   }
 
   /* Legend */
   .legend {
     display: flex;
-    gap: 12px;
-    padding: 10px 20px;
-    background: white;
-    border-bottom: 1px solid var(--border);
+    gap: 10px;
+    padding: 6px 0;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -133,8 +115,8 @@
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 13px;
+    gap: 4px;
+    font-size: 11px;
     color: var(--gray);
   }
 
@@ -151,10 +133,8 @@
   /* Filter bar */
   .filter-bar {
     display: flex;
-    gap: 8px;
-    padding: 10px 20px;
-    background: white;
-    border-bottom: 1px solid var(--border);
+    gap: 6px;
+    padding: 6px 0;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -543,9 +523,8 @@
     .event-tag .venue-badge { display: none; }
     .header h1 { font-size: 15px; }
     .header h1 .eagle-icon { font-size: 18px; }
-    .legend { gap: 8px; padding: 8px 12px; }
-    .filter-bar { padding: 8px 12px; }
     .calendar-container { padding: 6px; }
+    .month-label { font-size: 15px; }
   }
 
   @media (max-width: 480px) {
@@ -558,36 +537,37 @@
 </head>
 <body>
 
-<div class="header" style="position:relative;">
+<div class="header">
   <div class="header-top">
     <h1><span class="eagle-icon">&#x1F985;</span> 한화이글스 예매 캘린더</h1>
-    <button class="today-btn" onclick="goToday()">오늘</button>
   </div>
-  <div class="nav-row">
-    <button class="nav-btn" onclick="changeMonth(-1)">&#9664;</button>
-    <span class="month-label" id="monthLabel"></span>
-    <button class="nav-btn" onclick="changeMonth(1)">&#9654;</button>
-  </div>
-</div>
-
-<div class="legend">
-  <div class="legend-item"><div class="legend-dot game"></div>경기 일정</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--primary);border:1px dashed #9A3412;"></div>전야제 (휴일/토 전날)</div>
-  <div class="legend-item"><div class="legend-dot ticket"></div>예매 오픈</div>
-  <div class="legend-item"><div class="legend-dot holiday"></div>공휴일</div>
-</div>
-
-<div class="filter-bar" id="filterBar">
-  <button class="filter-chip active" data-venue="all" onclick="toggleFilter(this)">전체</button>
-  <button class="filter-chip active" data-venue="대전" onclick="toggleFilter(this)">대전 (홈)</button>
-  <button class="filter-chip active" data-venue="잠실" onclick="toggleFilter(this)">잠실</button>
-  <button class="filter-chip active" data-venue="수원" onclick="toggleFilter(this)">수원</button>
-  <button class="filter-chip active" data-venue="인천" onclick="toggleFilter(this)">인천</button>
 </div>
 
 <div class="upcoming-banner" id="upcomingBanner"></div>
 
 <div class="calendar-container">
+  <div class="nav-row">
+    <button class="nav-btn" onclick="changeMonth(-1)">&#9664;</button>
+    <span class="month-label" id="monthLabel"></span>
+    <button class="nav-btn" onclick="changeMonth(1)">&#9654;</button>
+    <button class="today-btn" onclick="goToday()">오늘</button>
+  </div>
+
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-chip active" data-venue="all" onclick="toggleFilter(this)">전체</button>
+    <button class="filter-chip active" data-venue="대전" onclick="toggleFilter(this)">대전 (홈)</button>
+    <button class="filter-chip active" data-venue="잠실" onclick="toggleFilter(this)">잠실</button>
+    <button class="filter-chip active" data-venue="수원" onclick="toggleFilter(this)">수원</button>
+    <button class="filter-chip active" data-venue="인천" onclick="toggleFilter(this)">인천</button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot game"></div>경기 일정</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--primary);border:1px dashed #9A3412;"></div>전야제</div>
+    <div class="legend-item"><div class="legend-dot ticket"></div>예매 오픈</div>
+    <div class="legend-item"><div class="legend-dot holiday"></div>공휴일</div>
+  </div>
+
   <div class="weekday-header">
     <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
   </div>
