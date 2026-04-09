@@ -459,16 +459,30 @@
     gap: 6px;
   }
 
-  .upcoming-list { display: flex; flex-direction: column; gap: 8px; }
+  .upcoming-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  @media (max-width: 640px) {
+    .upcoming-list { grid-template-columns: 1fr; }
+  }
 
   .upcoming-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 11px 14px;
+    gap: 8px;
+    padding: 8px 10px;
     background: var(--light-gray);
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+
+  .upcoming-item:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
 
   .upcoming-date {
@@ -477,8 +491,8 @@
     padding: 4px 8px;
     border-radius: 6px;
     font-weight: 700;
-    font-size: 12px;
-    min-width: 55px;
+    font-size: 11px;
+    min-width: 48px;
     text-align: center;
   }
 
@@ -1084,20 +1098,22 @@ function renderUpcoming(filteredGames, ticketEvents) {
   upcoming.slice(0, 8).forEach(item => {
     const d = new Date(item.date);
     const dayNames = ['일','월','화','수','목','금','토'];
-    const dateLabel = `${d.getMonth()+1}/${d.getDate()} (${dayNames[d.getDay()]})`;
+    const dateLabel = `${d.getMonth()+1}/${d.getDate()}(${dayNames[d.getDay()]})`;
 
     if (item.type === 'game') {
       const g = item.data;
-      html += `<div class="upcoming-item">
+      const gJson = JSON.stringify(g).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      html += `<div class="upcoming-item" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\\'")})'>
         <span class="upcoming-date">${dateLabel}</span>
         <span class="upcoming-detail"><strong>${g.time}</strong> vs ${g.opponent} @ ${g.venue}</span>
         <span class="upcoming-type game">경기</span>
       </div>`;
     } else {
       const t = item.data;
-      html += `<div class="upcoming-item">
+      const tJson = JSON.stringify(t).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      html += `<div class="upcoming-item" onclick='showTicketDetail(${JSON.stringify(t).replace(/'/g, "\\\'")})'>
         <span class="upcoming-date ticket-date">${dateLabel}</span>
-        <span class="upcoming-detail"><strong>${t.time}</strong> ${t.game.date.slice(5)} ${t.game.opponent}전 예매오픈 (${t.platform})</span>
+        <span class="upcoming-detail"><strong>${t.time}</strong> ${t.game.opponent}전 예매 (${t.platform})</span>
         <span class="upcoming-type ticket">예매</span>
       </div>`;
     }
