@@ -32,40 +32,46 @@
   .header {
     background: linear-gradient(135deg, var(--dark) 0%, #16213e 100%);
     color: white;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 10px 16px;
     position: sticky;
     top: 0;
     z-index: 100;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
 
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
   .header h1 {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    white-space: nowrap;
   }
 
-  .header h1 .eagle-icon { font-size: 24px; }
+  .header h1 .eagle-icon { font-size: 20px; }
 
-  .nav-buttons {
+  .nav-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 6px;
   }
 
   .nav-btn {
     background: rgba(255,255,255,0.15);
     border: none;
     color: white;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 8px;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -76,9 +82,9 @@
   .nav-btn:hover { background: rgba(255,255,255,0.25); }
 
   .month-label {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    min-width: 120px;
+    min-width: 100px;
     text-align: center;
   }
 
@@ -86,15 +92,32 @@
     background: var(--primary);
     border: none;
     color: white;
-    padding: 6px 14px;
+    padding: 5px 12px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
   }
 
   .today-btn:hover { background: #e0650f; }
+
+  /* PC에서는 헤더 1줄로 */
+  @media (min-width: 769px) {
+    .header-top { justify-content: flex-start; }
+    .header h1 { font-size: 20px; }
+    .header h1 .eagle-icon { font-size: 24px; }
+    .nav-row {
+      margin-top: 0;
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .header { position: sticky; padding: 14px 16px; }
+    .month-label { font-size: 18px; min-width: 120px; }
+    .nav-btn { width: 36px; height: 36px; font-size: 18px; }
+  }
 
   /* Legend */
   .legend {
@@ -518,7 +541,8 @@
     .day-number { font-size: 12px; }
     .event-tag { font-size: 10px; padding: 3px 5px; }
     .event-tag .venue-badge { display: none; }
-    .header h1 { font-size: 17px; }
+    .header h1 { font-size: 15px; }
+    .header h1 .eagle-icon { font-size: 18px; }
     .legend { gap: 8px; padding: 8px 12px; }
     .filter-bar { padding: 8px 12px; }
     .calendar-container { padding: 6px; }
@@ -534,10 +558,12 @@
 </head>
 <body>
 
-<div class="header">
-  <h1><span class="eagle-icon">&#x1F985;</span> 한화이글스 예매 캘린더</h1>
-  <div class="nav-buttons">
+<div class="header" style="position:relative;">
+  <div class="header-top">
+    <h1><span class="eagle-icon">&#x1F985;</span> 한화이글스 예매 캘린더</h1>
     <button class="today-btn" onclick="goToday()">오늘</button>
+  </div>
+  <div class="nav-row">
     <button class="nav-btn" onclick="changeMonth(-1)">&#9664;</button>
     <span class="month-label" id="monthLabel"></span>
     <button class="nav-btn" onclick="changeMonth(1)">&#9654;</button>
