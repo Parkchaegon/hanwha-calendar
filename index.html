@@ -1703,67 +1703,203 @@ const GAMES = [
   { date: '2026-09-06', time: '17:00', home: '키움', away: 'NC', venue: '고척' },
 ];
 
-// ===================== RESULTS & STANDINGS (한화 기준) =====================
-const GAME_RESULTS = {
-  '한화': {
-    '2026-03-28': { score: '10-9', result: 'W', note: '연장 11회' },
-    '2026-03-29': { score: '10-4', result: 'W' },
-    '2026-03-31': { score: '4-9', result: 'L' },
-    '2026-04-01': { score: '11-14', result: 'L' },
-    '2026-04-02': { score: '8-13', result: 'L' },
-    '2026-04-03': { score: '11-6', result: 'W' },
-    '2026-04-04': { score: '9-3', result: 'W' },
-    '2026-04-05': { score: '0-8', result: 'L' },
-    '2026-04-07': { score: '6-2', result: 'W' },
-    '2026-04-08': { score: '4-3', result: 'W' },
-  },
+// ===================== RESULTS & STANDINGS =====================
+// gameResults[dateStr] = [{ away, home, awayScore, homeScore }, ...]
+let gameResults = {};
+let standings = {};
+let resultsLastUpdate = '';
+
+// KBO API 팀코드 → 한글 매핑
+const TEAM_CODE_MAP = {
+  'HT': 'KIA', 'OB': '두산', 'LT': '롯데', 'SS': '삼성', 'SK': 'SSG',
+  'WO': '키움', 'HH': '한화', 'LG': 'LG', 'NC': 'NC', 'KT': 'KT',
+  // 역매핑용 한글명
+  'KIA': 'KIA', '두산': '두산', '롯데': '롯데', '삼성': '삼성', 'SSG': 'SSG',
+  '키움': '키움', '한화': '한화',
 };
 
-// 순위 (구단별)
-const STANDINGS = {
-  '한화': { rank: 3, wins: 6, losses: 4, draws: 0, pct: '.600', gb: '1', streak: 'W2', lastUpdate: '4/8' },
-  '삼성': { rank: 5, wins: 5, losses: 5, draws: 0, pct: '.500', gb: '2', streak: 'L1', lastUpdate: '4/8' },
-  'LG':   { rank: 1, wins: 8, losses: 2, draws: 0, pct: '.800', gb: '-', streak: 'W4', lastUpdate: '4/8' },
-  '두산': { rank: 7, wins: 4, losses: 6, draws: 0, pct: '.400', gb: '3', streak: 'L2', lastUpdate: '4/8' },
-  'KT':   { rank: 4, wins: 5, losses: 5, draws: 0, pct: '.500', gb: '2', streak: 'W1', lastUpdate: '4/8' },
-  'SSG':  { rank: 6, wins: 4, losses: 6, draws: 0, pct: '.400', gb: '3', streak: 'L2', lastUpdate: '4/8' },
-  '키움': { rank: 8, wins: 3, losses: 7, draws: 0, pct: '.300', gb: '4', streak: 'L3', lastUpdate: '4/8' },
-  'KIA':  { rank: 2, wins: 7, losses: 3, draws: 0, pct: '.700', gb: '0.5', streak: 'W1', lastUpdate: '4/8' },
-  'NC':   { rank: 9, wins: 3, losses: 7, draws: 0, pct: '.300', gb: '4', streak: 'W1', lastUpdate: '4/8' },
-  '롯데': { rank: 10, wins: 2, losses: 8, draws: 0, pct: '.200', gb: '5', streak: 'L5', lastUpdate: '4/8' },
-};
+function mapTeamName(name) {
+  return TEAM_CODE_MAP[name] || name;
+}
 
-// 상대팀 입장에서 결과를 뒤집어서 반환
 function getGameResult(teamKey, dateStr) {
-  // 한화 기준 결과가 있으면 해당 경기에서 teamKey의 결과를 반환
-  const hanwhaResult = GAME_RESULTS['한화'] && GAME_RESULTS['한화'][dateStr];
-  if (!hanwhaResult) return null;
+  const dayResults = gameResults[dateStr];
+  if (!dayResults) return null;
 
-  // 해당 날짜 경기를 찾아서 teamKey가 관련되어 있는지 확인
-  const game = GAMES.find(g => g.date === dateStr && (g.home === teamKey || g.away === teamKey));
-  if (!game) return null;
+  for (const r of dayResults) {
+    const isHome = r.home === teamKey;
+    const isAway = r.away === teamKey;
+    if (!isHome && !isAway) continue;
 
-  if (teamKey === '한화') {
-    return hanwhaResult;
+    const myScore = isHome ? r.homeScore : r.awayScore;
+    const oppScore = isHome ? r.awayScore : r.homeScore;
+    let result;
+    if (myScore > oppScore) result = 'W';
+    else if (myScore < oppScore) result = 'L';
+    else result = 'D';
+
+    return {
+      score: `${myScore}-${oppScore}`,
+      result: result,
+    };
+  }
+  return null;
+}
+
+// KBO API에서 경기 결과 가져오기
+async function fetchResults() {
+  const btn = document.getElementById('updateResultsBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '업데이트 중...'; }
+
+  const todayDate = new Date();
+  const startMonth = 3; // 3월
+  const endMonth = todayDate.getMonth() + 1; // 현재 월
+
+  const months = [];
+  for (let m = startMonth; m <= endMonth; m++) {
+    months.push(String(m).padStart(2, '0'));
   }
 
-  // 상대팀 입장: 결과 뒤집기, 스코어도 뒤집기
-  const flippedResult = hanwhaResult.result === 'W' ? 'L' : (hanwhaResult.result === 'L' ? 'W' : 'D');
-  const scoreParts = hanwhaResult.score.split('-');
-  const flippedScore = `${scoreParts[1]}-${scoreParts[0]}`;
-  return { score: flippedScore, result: flippedResult, note: hanwhaResult.note };
+  const newResults = {};
+  const teamStats = {};
+  TEAM_ORDER.forEach(t => { teamStats[t] = { wins: 0, losses: 0, draws: 0 }; });
+
+  for (const mm of months) {
+    try {
+      const res = await fetch('https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleList', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `leId=1&srId=0&srIdList=0%2C9&seasonId=2026&gameMonth=${mm}`,
+      });
+      const html = await res.text();
+      parseResultsHtml(html, newResults, mm);
+    } catch (e) {
+      console.error(`Failed to fetch month ${mm}:`, e);
+    }
+  }
+
+  gameResults = newResults;
+
+  // 팀별 성적 계산
+  Object.values(newResults).flat().forEach(r => {
+    if (r.homeScore === r.awayScore) {
+      teamStats[r.home].draws++;
+      teamStats[r.away].draws++;
+    } else if (r.homeScore > r.awayScore) {
+      teamStats[r.home].wins++;
+      teamStats[r.away].losses++;
+    } else {
+      teamStats[r.away].wins++;
+      teamStats[r.home].losses++;
+    }
+  });
+
+  // 순위 계산
+  const ranked = TEAM_ORDER.map(t => {
+    const s = teamStats[t];
+    const total = s.wins + s.losses;
+    const pct = total > 0 ? (s.wins / total) : 0;
+    return { team: t, ...s, pct };
+  }).sort((a, b) => b.pct - a.pct || b.wins - a.wins);
+
+  const topPct = ranked[0].pct;
+  const topWins = ranked[0].wins;
+  const topLosses = ranked[0].losses;
+
+  standings = {};
+  ranked.forEach((r, i) => {
+    const gamesBack = ((topWins - r.wins) - (topLosses - r.losses)) / 2;
+    standings[r.team] = {
+      rank: i + 1,
+      wins: r.wins,
+      losses: r.losses,
+      draws: r.draws,
+      pct: r.pct > 0 ? '.' + Math.round(r.pct * 1000).toString().padStart(3, '0') : '.000',
+      gb: gamesBack === 0 ? '-' : gamesBack.toString(),
+    };
+  });
+
+  const now = new Date();
+  resultsLastUpdate = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  renderRecordBanner();
+  renderCalendar();
+
+  if (btn) { btn.disabled = false; btn.textContent = '결과 업데이트'; }
+}
+
+function parseResultsHtml(html, results, monthStr) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = doc.querySelectorAll('tr');
+
+  let currentDate = '';
+
+  rows.forEach(row => {
+    const tds = row.querySelectorAll('td');
+    if (tds.length < 3) return;
+
+    // 날짜 셀 확인 (rowspan이 있는 첫번째 td)
+    let playTd = null;
+    let offset = 0;
+
+    if (tds[0] && tds[0].getAttribute('rowspan')) {
+      // 날짜가 있는 행
+      const dateText = tds[0].textContent.trim();
+      const match = dateText.match(/(\d+)\.(\d+)/);
+      if (match) {
+        currentDate = `2026-${monthStr}-${match[2].padStart(2, '0')}`;
+      }
+      playTd = tds[1];
+      offset = 1;
+    } else {
+      // 같은 날짜의 추가 행
+      playTd = tds[0];
+      offset = 0;
+    }
+
+    if (!playTd || !currentDate) return;
+
+    const playHtml = playTd.innerHTML;
+    const spans = playTd.querySelectorAll(':scope > span');
+    const em = playTd.querySelector('em');
+    if (!em || spans.length < 2) return;
+
+    const awayName = mapTeamName(spans[0].textContent.trim());
+    const homeName = mapTeamName(spans[spans.length - 1].textContent.trim());
+
+    // em 안의 점수 span 확인
+    const scoreSpans = em.querySelectorAll('span');
+    if (scoreSpans.length < 3) return; // 미래 경기 (vs만 있음)
+
+    const leftSpan = scoreSpans[0];
+    const rightSpan = scoreSpans[2];
+
+    // class="same"이면 진행중/0-0이므로 스킵
+    if (leftSpan.classList.contains('same')) return;
+    // win/lose 클래스가 있어야 완료된 경기
+    if (!leftSpan.classList.contains('win') && !leftSpan.classList.contains('lose')) return;
+
+    const awayScore = parseInt(leftSpan.textContent.trim());
+    const homeScore = parseInt(rightSpan.textContent.trim());
+
+    if (isNaN(awayScore) || isNaN(homeScore)) return;
+
+    if (!results[currentDate]) results[currentDate] = [];
+    results[currentDate].push({ away: awayName, home: homeName, awayScore, homeScore });
+  });
 }
 
 function renderRecordBanner() {
-  const s = STANDINGS[selectedTeam];
+  const s = standings[selectedTeam];
+  const banner = document.getElementById('recordBanner');
   if (!s) {
-    document.getElementById('recordBanner').innerHTML = '';
+    banner.innerHTML = `<span style="font-size:13px;color:var(--gray);">경기 결과를 불러오려면 아래 버튼을 클릭하세요</span>
+      <button id="updateResultsBtn" onclick="fetchResults()" style="background:var(--primary);color:white;border:none;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">결과 업데이트</button>`;
     return;
   }
-  const streakClass = s.streak.startsWith('W') ? 'w-streak' : 'l-streak';
-  const streakLabel = s.streak.startsWith('W') ? s.streak.replace('W','') + '연승' : s.streak.replace('L','') + '연패';
 
-  document.getElementById('recordBanner').innerHTML = `
+  banner.innerHTML = `
     <div class="record-rank"><span class="rank-num">${s.rank}위</span> / 10팀</div>
     <div class="record-stat">
       <span class="win">${s.wins}승</span>
@@ -1771,8 +1907,8 @@ function renderRecordBanner() {
       ${s.draws ? `<span class="draw">${s.draws}무</span>` : ''}
       <span class="pct">(${s.pct})</span>
     </div>
-    <span class="record-streak ${streakClass}">${streakLabel}</span>
-    <span style="font-size:11px;color:var(--gray);">${s.lastUpdate} 기준</span>
+    <button id="updateResultsBtn" onclick="fetchResults()" style="background:var(--primary);color:white;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">결과 업데이트</button>
+    <span style="font-size:11px;color:var(--gray);">${resultsLastUpdate} 갱신</span>
   `;
 }
 
