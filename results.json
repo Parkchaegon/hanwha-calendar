@@ -86,6 +86,13 @@
     },
     {
       "date": "2026-03-31",
+      "away": "두산",
+      "home": "삼성",
+      "awayScore": 5,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-03-31",
       "away": "롯데",
       "home": "NC",
       "awayScore": 2,
@@ -524,7 +531,7 @@
       "rank": 1,
       "wins": 10,
       "losses": 4,
-      "draws": 0,
+      "draws": 1,
       "pct": ".714",
       "gb": "-"
     },
@@ -588,7 +595,7 @@
       "rank": 9,
       "wins": 5,
       "losses": 9,
-      "draws": 0,
+      "draws": 1,
       "pct": ".357",
       "gb": "5"
     },
@@ -601,5 +608,5 @@
       "gb": "6.5"
     }
   },
-  "lastUpdate": "2026-04-16T11:02:02.637Z"
+  "lastUpdate": "2026-04-16T11:07:16.750Z"
 }

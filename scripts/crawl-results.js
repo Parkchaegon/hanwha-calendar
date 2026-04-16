@@ -63,19 +63,7 @@ function parseResults(data, monthStr) {
 
     const playHtml = playCell.Text;
 
-    // 완료된 경기만: class="win" 있어야 함
-    if (!playHtml.includes('class="win"') && !playHtml.includes("class='win'")) continue;
-
-    // 팀명 추출: <span>AWAY</span><em>...</em><span>HOME</span>
-    // 최외곽 span만 팀명 (em 밖의 span)
-    const withoutEm = playHtml.replace(/<em>[\s\S]*?<\/em>/, '|||');
-    const teamSpans = [...withoutEm.matchAll(/<span[^>]*>([^<]+)<\/span>/g)];
-    if (teamSpans.length < 2) continue;
-
-    const awayName = mapTeam(teamSpans[0][1].trim());
-    const homeName = mapTeam(teamSpans[teamSpans.length - 1][1].trim());
-
-    // 점수 추출: class="win"/"lose" span
+    // 점수 span이 있는지 확인 (win/lose/same 클래스)
     const scoreRegex = /class="(win|lose|same)"[^>]*>(\d+)/g;
     const scores = [];
     let m;
@@ -83,8 +71,27 @@ function parseResults(data, monthStr) {
       scores.push({ type: m[1], value: parseInt(m[2]) });
     }
 
+    // 점수 span이 2개 미만이면 미래 경기
     if (scores.length < 2) continue;
-    if (scores[0].type === 'same') continue; // 진행중
+
+    // same + 0 vs 0 이면 진행중/시작전이므로 스킵, same + 점수 있으면 무승부
+    if (scores[0].type === 'same' && scores[0].value === 0 && scores[1].value === 0) continue;
+
+    // relay 셀에 btnReview가 있으면 확실히 완료된 경기
+    const relayCell = cells.find(c => c.Class === 'relay');
+    const isCompleted = (relayCell && relayCell.Text.includes('btnReview'))
+      || scores[0].type === 'win' || scores[0].type === 'lose'
+      || (scores[0].type === 'same' && scores[0].value > 0);
+
+    if (!isCompleted) continue;
+
+    // 팀명 추출: <span>AWAY</span><em>...</em><span>HOME</span>
+    const withoutEm = playHtml.replace(/<em>[\s\S]*?<\/em>/, '|||');
+    const teamSpans = [...withoutEm.matchAll(/<span[^>]*>([^<]+)<\/span>/g)];
+    if (teamSpans.length < 2) continue;
+
+    const awayName = mapTeam(teamSpans[0][1].trim());
+    const homeName = mapTeam(teamSpans[teamSpans.length - 1][1].trim());
 
     const awayScore = scores[0].value;
     const homeScore = scores[1].value;

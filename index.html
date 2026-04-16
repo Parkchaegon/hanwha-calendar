@@ -2095,8 +2095,8 @@ function renderCalendar() {
         const gr = getGameResult(selectedTeam, g.date);
         const perspective = getGamePerspective(g);
         if (gr) {
-          const color = gr.result === 'W' ? '#1D4ED8' : '#DC2626';
-          const label = gr.result === 'W' ? 'W' : 'L';
+          const color = gr.result === 'W' ? '#1D4ED8' : gr.result === 'L' ? '#DC2626' : '#6b7280';
+          const label = gr.result === 'W' ? 'W' : gr.result === 'L' ? 'L' : 'D';
           html += `<div style="font-size:10px;color:${color};font-weight:600;line-height:1.5;cursor:pointer;" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>vs ${perspective.opponent} ${label} ${gr.score}</div>`;
         } else {
           // 결과 없는 과거/오늘 경기
@@ -2231,9 +2231,11 @@ function showGameDetail(game) {
   // 경기 결과
   const gr = getGameResult(selectedTeam, game.date);
   if (gr) {
-    const resultText = gr.result === 'W' ? '승리' : '패배';
-    html += `<div class="modal-section" style="background:${gr.result === 'W' ? '#EFF6FF' : '#FEF2F2'}; text-align:center;">
-      <div style="font-size:22px;font-weight:800;color:${gr.result === 'W' ? '#1D4ED8' : '#DC2626'}">${resultText}</div>
+    const resultText = gr.result === 'W' ? '승리' : gr.result === 'L' ? '패배' : '무승부';
+    const resultBg = gr.result === 'W' ? '#EFF6FF' : gr.result === 'L' ? '#FEF2F2' : '#F3F4F6';
+    const resultColor = gr.result === 'W' ? '#1D4ED8' : gr.result === 'L' ? '#DC2626' : '#6b7280';
+    html += `<div class="modal-section" style="background:${resultBg}; text-align:center;">
+      <div style="font-size:22px;font-weight:800;color:${resultColor}">${resultText}</div>
       <div style="font-size:18px;font-weight:700;margin-top:4px;">${gr.score}</div>
       ${gr.note ? `<div style="font-size:12px;color:var(--gray);margin-top:2px;">${gr.note}</div>` : ''}
     </div>`;
