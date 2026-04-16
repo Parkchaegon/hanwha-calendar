@@ -1847,7 +1847,11 @@ function isTargetDay(ds) {
 
 // 선택 구단 경기 가져오기
 function getTeamGames() {
-  return GAMES.filter(g => g.home === selectedTeam || g.away === selectedTeam);
+  if (selectedTeam === '한화') {
+    return GAMES.filter(g => g.home === selectedTeam || g.away === selectedTeam);
+  }
+  // 한화 외 구단은 홈경기만
+  return GAMES.filter(g => g.home === selectedTeam);
 }
 
 // 선택 구단 입장에서 경기 정보
