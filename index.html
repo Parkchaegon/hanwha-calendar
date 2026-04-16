@@ -1746,6 +1746,51 @@ function getGameResult(teamKey, dateStr) {
   return null;
 }
 
+// CORS 프록시를 통한 KBO API 호출 (여러 프록시 폴백)
+async function fetchKboSchedule(monthStr) {
+  const kboUrl = 'https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleList';
+  const body = `leId=1&srId=0&srIdList=0%2C9&seasonId=2026&gameMonth=${monthStr}&teamId=`;
+
+  // 방법 1: corsproxy.io (POST 지원)
+  try {
+    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(kboUrl)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body,
+    });
+    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
+  } catch (e) { console.log('corsproxy.io failed:', e.message); }
+
+  // 방법 2: thingproxy (POST 지원)
+  try {
+    const res = await fetch(`https://thingproxy.freeboard.io/fetch/${kboUrl}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body,
+    });
+    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
+  } catch (e) { console.log('thingproxy failed:', e.message); }
+
+  // 방법 3: allorigins (GET 래핑)
+  try {
+    const getUrl = `${kboUrl}?${body}`;
+    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getUrl)}`);
+    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
+  } catch (e) { console.log('allorigins failed:', e.message); }
+
+  // 방법 4: 직접 호출 (같은 도메인이거나 CORS 허용 시)
+  try {
+    const res = await fetch(kboUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body,
+    });
+    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
+  } catch (e) { console.log('direct fetch failed:', e.message); }
+
+  return null;
+}
+
 // KBO API에서 경기 결과 가져오기
 async function fetchResults() {
   const btn = document.getElementById('updateResultsBtn');
@@ -1764,18 +1809,19 @@ async function fetchResults() {
   const teamStats = {};
   TEAM_ORDER.forEach(t => { teamStats[t] = { wins: 0, losses: 0, draws: 0 }; });
 
+  let fetchSuccess = false;
   for (const mm of months) {
-    try {
-      const res = await fetch('https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleList', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `leId=1&srId=0&srIdList=0%2C9&seasonId=2026&gameMonth=${mm}`,
-      });
-      const html = await res.text();
+    const html = await fetchKboSchedule(mm);
+    if (html) {
       parseResultsHtml(html, newResults, mm);
-    } catch (e) {
-      console.error(`Failed to fetch month ${mm}:`, e);
+      fetchSuccess = true;
     }
+  }
+
+  if (!fetchSuccess) {
+    alert('경기 결과를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    if (btn) { btn.disabled = false; btn.textContent = '결과 업데이트'; }
+    return;
   }
 
   gameResults = newResults;
