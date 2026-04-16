@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>한화이글스 경기 & 예매 캘린더</title>
+<title>KBO 경기 & 예매 캘린더</title>
 <style>
   :root {
     --primary: #F37321;
@@ -46,7 +46,64 @@
     white-space: nowrap;
   }
 
-  .header h1 .eagle-icon { font-size: 20px; }
+  .header h1 .team-icon { font-size: 20px; }
+
+  /* Team Selector */
+  .team-selector {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .team-selector::-webkit-scrollbar { display: none; }
+
+  .team-selector-inner {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .team-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 2px solid var(--border);
+    background: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    color: var(--dark);
+  }
+
+  .team-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .team-btn.active {
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  .team-btn .team-emoji { font-size: 16px; }
+
+  @media (max-width: 640px) {
+    .team-selector-inner {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+    }
+    .team-btn { padding: 5px 10px; font-size: 12px; }
+  }
 
   .nav-row {
     display: flex;
@@ -94,11 +151,11 @@
     margin-left: 4px;
   }
 
-  .today-btn:hover { background: #e0650f; }
+  .today-btn:hover { opacity: 0.85; }
 
   @media (min-width: 769px) {
     .header h1 { font-size: 20px; }
-    .header h1 .eagle-icon { font-size: 24px; }
+    .header h1 .team-icon { font-size: 24px; }
     .month-label { font-size: 19px; min-width: 130px; }
     .nav-btn { width: 36px; height: 36px; font-size: 18px; }
   }
@@ -639,6 +696,16 @@
   .upcoming-type.game { background: var(--game-bg); color: #9A3412; }
   .upcoming-type.ticket { background: var(--ticket-bg); color: #1E40AF; }
 
+  /* Data notice */
+  .data-notice {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--gray);
+  }
+
   /* Responsive */
   @media (max-width: 768px) {
     .day-cell { min-height: 75px; padding: 4px; }
@@ -646,7 +713,7 @@
     .event-tag { font-size: 10px; padding: 3px 5px; }
     .event-tag .venue-badge { display: none; }
     .header h1 { font-size: 15px; }
-    .header h1 .eagle-icon { font-size: 18px; }
+    .header h1 .team-icon { font-size: 18px; }
     .calendar-container { padding: 6px; }
     .month-label { font-size: 15px; }
   }
@@ -663,8 +730,12 @@
 
 <div class="header">
   <div class="header-top">
-    <h1><span class="eagle-icon">&#x1F985;</span> 한화이글스 예매 캘린더</h1>
+    <h1 id="headerTitle"><span class="team-icon">&#x1F985;</span> 한화이글스 예매 캘린더</h1>
   </div>
+</div>
+
+<div class="team-selector">
+  <div class="team-selector-inner" id="teamSelector"></div>
 </div>
 
 <div class="record-banner" id="recordBanner"></div>
@@ -679,13 +750,7 @@
     <button class="today-btn" onclick="goToday()">오늘</button>
   </div>
 
-  <div class="filter-bar" id="filterBar">
-    <button class="filter-chip active" data-venue="all" onclick="toggleFilter(this)">전체</button>
-    <button class="filter-chip active" data-venue="대전" onclick="toggleFilter(this)">대전 (홈)</button>
-    <button class="filter-chip active" data-venue="잠실" onclick="toggleFilter(this)">잠실</button>
-    <button class="filter-chip active" data-venue="수원" onclick="toggleFilter(this)">수원</button>
-    <button class="filter-chip active" data-venue="인천" onclick="toggleFilter(this)">인천</button>
-  </div>
+  <div class="filter-bar" id="filterBar"></div>
 
   <div class="legend">
     <div class="legend-item"><div class="legend-dot game"></div>경기 일정</div>
@@ -699,14 +764,31 @@
   <div class="calendar-grid" id="calendarGrid"></div>
 </div>
 
+<div id="dataNotice" class="data-notice"></div>
+
 <div class="modal-overlay" id="modal" onclick="closeModal(event)">
   <div class="modal-content" id="modalContent"></div>
 </div>
 
 <script>
+// ===================== TEAM CONFIG =====================
+const TEAMS = {
+  '한화': { name: '한화 이글스', short: '한화', color: '#F37321', lightColor: '#FFF3E8', darkText: '#9A3412', icon: '\u{1F985}', homeVenue: '대전' },
+  '삼성': { name: '삼성 라이온즈', short: '삼성', color: '#074CA1', lightColor: '#E8F0FE', darkText: '#053674', icon: '\u{1F981}', homeVenue: '대구' },
+  'LG':   { name: 'LG 트윈스', short: 'LG', color: '#C30452', lightColor: '#FDE8EF', darkText: '#8A0039', icon: '\u{1F396}', homeVenue: '잠실' },
+  '두산': { name: '두산 베어스', short: '두산', color: '#131230', lightColor: '#EAEAF0', darkText: '#131230', icon: '\u{1F43B}', homeVenue: '잠실' },
+  'KT':   { name: 'KT 위즈', short: 'KT', color: '#000000', lightColor: '#F0F0F0', darkText: '#000000', icon: '\u{1F9D9}', homeVenue: '수원' },
+  'SSG':  { name: 'SSG 랜더스', short: 'SSG', color: '#CE0E2D', lightColor: '#FDE8EC', darkText: '#9A0B22', icon: '\u{1F6A2}', homeVenue: '인천' },
+  '키움': { name: '키움 히어로즈', short: '키움', color: '#570514', lightColor: '#F0E8EA', darkText: '#570514', icon: '\u{1F9B8}', homeVenue: '고척' },
+  'KIA':  { name: 'KIA 타이거즈', short: 'KIA', color: '#EA0029', lightColor: '#FDE8EC', darkText: '#B50020', icon: '\u{1F42F}', homeVenue: '광주' },
+  'NC':   { name: 'NC 다이노스', short: 'NC', color: '#315288', lightColor: '#E8EDF4', darkText: '#243D66', icon: '\u{1F995}', homeVenue: '창원' },
+  '롯데': { name: '롯데 자이언츠', short: '롯데', color: '#041E42', lightColor: '#E8ECF0', darkText: '#041E42', icon: '\u{26BE}', homeVenue: '사직' },
+};
+
+const TEAM_ORDER = ['한화', '삼성', 'LG', '두산', 'KT', 'SSG', '키움', 'KIA', 'NC', '롯데'];
+
 // ===================== DATA =====================
 
-// 2026 공휴일 (KBO 시즌 중 해당하는 것 위주)
 const HOLIDAYS = {
   '2026-03-01': '삼일절',
   '2026-03-02': '삼일절 대체휴일',
@@ -723,7 +805,7 @@ const HOLIDAYS = {
   '2026-10-09': '한글날',
 };
 
-// 구단별 예매 정보
+// 구단별 예매 정보 (홈구장 기준)
 const TICKET_INFO = {
   '대전': {
     team: '한화 이글스',
@@ -765,20 +847,52 @@ const TICKET_INFO = {
     openTime: '11:00',
     note: '멤버십 선예매: D-7~D-6 단계별 오픈',
   },
+  '대구': {
+    team: '삼성 라이온즈',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/60',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: '삼성 팬클럽 선예매: D-8 14:00',
+  },
+  '광주': {
+    team: 'KIA 타이거즈',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/57',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: 'KIA 멤버십 선예매: D-8 14:00',
+  },
+  '고척': {
+    team: '키움 히어로즈',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/58',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: '히어로즈 멤버십 선예매: D-8 14:00',
+  },
+  '창원': {
+    team: 'NC 다이노스',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/61',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: 'NC 멤버십 선예매: D-8 14:00',
+  },
+  '사직': {
+    team: '롯데 자이언츠',
+    platform: '티켓링크',
+    url: 'https://www.ticketlink.co.kr/sports/137/64',
+    daysBeforeOpen: 7,
+    openTime: '11:00',
+    note: '롯데 멤버십 선예매: D-8 14:00',
+  },
 };
 
-// 티켓베이 구단별 카테고리 ID 및 상대팀 서브카테고리
+// 티켓베이
 const TICKETBAY = {
   baseUrl: 'https://www.ticketbay.co.kr/product',
-  // 한화 홈 (대전)
-  '대전': {
-    categoryId: 6545,
-    opponents: {
-      '두산': 298093, '키움': 298090, 'LG': 298097, 'NC': 298086,
-      'KT': 298081, 'KIA': 298084, '삼성': 298088, '롯데': 298065, 'SSG': 298078,
-    },
-  },
-  // 원정 경기는 해당 홈팀 카테고리
+  '대전': { categoryId: 6545 },
   '잠실_LG':  { categoryId: 5690 },
   '잠실_두산': { categoryId: 5698 },
   '수원':     { categoryId: 5598 },
@@ -792,7 +906,7 @@ function getTicketbayUrl(game) {
   return `${TICKETBAY.baseUrl}/${tb.categoryId}/list/0`;
 }
 
-// 구장별 좌석 등급 & 정가 (액면가)
+// 구장별 좌석 등급 & 정가
 const SEAT_PRICES = {
   '대전': {
     name: '대전 한화생명 이글스파크',
@@ -883,184 +997,737 @@ const SEAT_PRICES = {
   },
 };
 
-// 한화이글스 경기 일정
-// 전체 일정을 넣고 렌더링 시 필터링
+// ===================== GAMES (중립 포맷: home, away) =====================
 const GAMES = [
-  // === 3월 ===
-  { date: '2026-03-28', time: '14:00', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-03-29', time: '14:00', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-03-31', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
-  // === 4월 ===
-  { date: '2026-04-01', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-02', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-03', time: '18:30', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-04-04', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-04-05', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-04-07', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-04-08', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-04-09', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-04-10', time: '18:30', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-11', time: '14:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-12', time: '14:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-14', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-15', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-16', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-17', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
-  { date: '2026-04-18', time: '17:00', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
-  { date: '2026-04-19', time: '14:00', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
-  { date: '2026-04-21', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-04-22', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-04-23', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-04-24', time: '18:30', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-25', time: '17:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-26', time: '14:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-28', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-29', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-04-30', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  // === 5월 ===
-  { date: '2026-05-01', time: '18:30', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
-  { date: '2026-05-02', time: '17:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
-  { date: '2026-05-03', time: '14:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
-  { date: '2026-05-05', time: '14:00', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-05-06', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-05-07', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-05-08', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-09', time: '17:00', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-10', time: '14:00', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-12', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
-  { date: '2026-05-13', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
-  { date: '2026-05-14', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
-  { date: '2026-05-15', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-05-16', time: '17:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-05-17', time: '14:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-05-19', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-20', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-21', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-22', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-23', time: '17:00', opponent: '두산', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-24', time: '14:00', opponent: '두산', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-26', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
-  { date: '2026-05-27', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
-  { date: '2026-05-28', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
-  { date: '2026-05-29', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-30', time: '17:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-05-31', time: '14:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  // === 6월 ===
-  { date: '2026-06-02', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-03', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-04', time: '18:30', opponent: 'KT', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-05', time: '18:30', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-06-06', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-06-07', time: '14:00', opponent: '두산', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-06-09', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-10', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-11', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-12', time: '18:30', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-13', time: '17:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-14', time: '14:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-16', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-06-17', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-06-18', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-06-19', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-20', time: '17:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-21', time: '14:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-06-23', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
-  { date: '2026-06-24', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
-  { date: '2026-06-25', time: '18:30', opponent: '롯데', venue: '사직', homeAway: 'AWAY' },
-  { date: '2026-06-26', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-06-27', time: '17:00', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-06-28', time: '14:00', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  // === 7월 ===
-  { date: '2026-07-03', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-07-04', time: '17:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-07-05', time: '14:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-07-07', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-07-08', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-07-09', time: '18:30', opponent: 'LG', venue: '대전', homeAway: 'HOME' },
-  // 7/10-15 올스타 브레이크
-  { date: '2026-07-17', time: '18:30', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
-  { date: '2026-07-18', time: '17:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
-  { date: '2026-07-19', time: '14:00', opponent: '삼성', venue: '대구', homeAway: 'AWAY' },
-  { date: '2026-07-21', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
-  { date: '2026-07-22', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
-  { date: '2026-07-23', time: '18:30', opponent: '키움', venue: '고척', homeAway: 'AWAY' },
-  { date: '2026-07-24', time: '18:30', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-07-25', time: '17:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-07-26', time: '14:00', opponent: 'KIA', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-07-28', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-07-29', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-07-30', time: '18:30', opponent: 'LG', venue: '잠실', homeAway: 'AWAY' },
-  { date: '2026-07-31', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  // === 8월 ===
-  { date: '2026-08-01', time: '17:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-08-02', time: '14:00', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-08-04', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-05', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-06', time: '18:30', opponent: '롯데', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-07', time: '18:30', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
-  { date: '2026-08-08', time: '17:00', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
-  { date: '2026-08-09', time: '14:00', opponent: 'NC', venue: '창원', homeAway: 'AWAY' },
-  { date: '2026-08-11', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-12', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-13', time: '18:30', opponent: '두산', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-14', time: '18:30', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-15', time: '14:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-16', time: '14:00', opponent: 'SSG', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-18', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-19', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-20', time: '18:30', opponent: '키움', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-21', time: '18:30', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-08-22', time: '17:00', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-08-23', time: '14:00', opponent: 'KIA', venue: '광주', homeAway: 'AWAY' },
-  { date: '2026-08-25', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-08-26', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-08-27', time: '18:30', opponent: 'SSG', venue: '인천', homeAway: 'AWAY' },
-  { date: '2026-08-28', time: '18:30', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-29', time: '17:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-08-30', time: '14:00', opponent: '삼성', venue: '대전', homeAway: 'HOME' },
-  // === 9월 ===
-  { date: '2026-09-01', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-09-02', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-09-03', time: '18:30', opponent: 'KT', venue: '수원', homeAway: 'AWAY' },
-  { date: '2026-09-04', time: '18:30', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-09-05', time: '17:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
-  { date: '2026-09-06', time: '14:00', opponent: 'NC', venue: '대전', homeAway: 'HOME' },
+  { date: '2026-03-28', time: '14:00', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-03-28', time: '14:00', home: 'SSG', away: 'KIA', venue: '인천' },
+  { date: '2026-03-28', time: '14:00', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-03-28', time: '14:00', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-03-28', time: '14:00', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-03-29', time: '14:00', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-03-29', time: '14:00', home: 'SSG', away: 'KIA', venue: '인천' },
+  { date: '2026-03-29', time: '14:00', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-03-29', time: '14:00', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-03-29', time: '14:00', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-03-31', time: '18:30', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-03-31', time: '18:30', home: 'SSG', away: '키움', venue: '인천' },
+  { date: '2026-03-31', time: '18:30', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-03-31', time: '18:30', home: 'NC', away: '롯데', venue: '창원' },
+  { date: '2026-03-31', time: '18:30', home: '한화', away: 'KT', venue: '대전' },
+  { date: '2026-04-01', time: '18:30', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-04-01', time: '18:30', home: 'SSG', away: '키움', venue: '인천' },
+  { date: '2026-04-01', time: '18:30', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-04-01', time: '18:30', home: 'NC', away: '롯데', venue: '창원' },
+  { date: '2026-04-01', time: '18:30', home: '한화', away: 'KT', venue: '대전' },
+  { date: '2026-04-02', time: '18:30', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-04-02', time: '18:30', home: 'SSG', away: '키움', venue: '인천' },
+  { date: '2026-04-02', time: '18:30', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-04-02', time: '18:30', home: 'NC', away: '롯데', venue: '창원' },
+  { date: '2026-04-02', time: '18:30', home: '한화', away: 'KT', venue: '대전' },
+  { date: '2026-04-03', time: '18:30', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-04-03', time: '18:30', home: '롯데', away: 'SSG', venue: '사직' },
+  { date: '2026-04-03', time: '18:30', home: 'KT', away: '삼성', venue: '수원' },
+  { date: '2026-04-03', time: '18:30', home: 'KIA', away: 'NC', venue: '광주' },
+  { date: '2026-04-03', time: '18:30', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-04-04', time: '14:00', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-04-04', time: '17:00', home: '롯데', away: 'SSG', venue: '사직' },
+  { date: '2026-04-04', time: '17:00', home: 'KT', away: '삼성', venue: '수원' },
+  { date: '2026-04-04', time: '17:00', home: 'KIA', away: 'NC', venue: '광주' },
+  { date: '2026-04-04', time: '17:00', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-04-05', time: '14:00', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-04-05', time: '14:00', home: '롯데', away: 'SSG', venue: '사직' },
+  { date: '2026-04-05', time: '14:00', home: 'KT', away: '삼성', venue: '수원' },
+  { date: '2026-04-05', time: '14:00', home: 'KIA', away: 'NC', venue: '광주' },
+  { date: '2026-04-05', time: '14:00', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-04-07', time: '18:30', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-04-07', time: '18:30', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-04-07', time: '18:30', home: '롯데', away: 'KT', venue: '사직' },
+  { date: '2026-04-07', time: '18:30', home: 'NC', away: 'LG', venue: '창원' },
+  { date: '2026-04-07', time: '18:30', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-04-08', time: '18:30', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-04-08', time: '18:30', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-04-08', time: '18:30', home: '롯데', away: 'KT', venue: '사직' },
+  { date: '2026-04-08', time: '18:30', home: 'NC', away: 'LG', venue: '창원' },
+  { date: '2026-04-08', time: '18:30', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-04-10', time: '18:30', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-04-10', time: '18:30', home: '삼성', away: 'NC', venue: '대구' },
+  { date: '2026-04-10', time: '18:30', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-04-10', time: '18:30', home: '키움', away: '롯데', venue: '고척' },
+  { date: '2026-04-10', time: '18:30', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-04-11', time: '14:00', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-04-11', time: '17:00', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-04-11', time: '17:00', home: '삼성', away: 'NC', venue: '대구' },
+  { date: '2026-04-11', time: '17:00', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-04-11', time: '17:00', home: '키움', away: '롯데', venue: '고척' },
+  { date: '2026-04-12', time: '14:00', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-04-12', time: '14:00', home: '삼성', away: 'NC', venue: '대구' },
+  { date: '2026-04-12', time: '14:00', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-04-12', time: '14:00', home: '키움', away: '롯데', venue: '고척' },
+  { date: '2026-04-12', time: '14:00', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-04-14', time: '18:30', home: 'LG', away: '롯데', venue: '잠실' },
+  { date: '2026-04-14', time: '18:30', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-04-14', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-04-14', time: '18:30', home: 'KIA', away: '키움', venue: '광주' },
+  { date: '2026-04-14', time: '18:30', home: '한화', away: '삼성', venue: '대전' },
+  { date: '2026-04-15', time: '18:30', home: 'LG', away: '롯데', venue: '잠실' },
+  { date: '2026-04-15', time: '18:30', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-04-15', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-04-15', time: '18:30', home: 'KIA', away: '키움', venue: '광주' },
+  { date: '2026-04-15', time: '18:30', home: '한화', away: '삼성', venue: '대전' },
+  { date: '2026-04-16', time: '18:30', home: 'LG', away: '롯데', venue: '잠실' },
+  { date: '2026-04-16', time: '18:30', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-04-16', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-04-16', time: '18:30', home: 'KIA', away: '키움', venue: '광주' },
+  { date: '2026-04-16', time: '18:30', home: '한화', away: '삼성', venue: '대전' },
+  { date: '2026-04-17', time: '18:30', home: '두산', away: 'KIA', venue: '잠실' },
+  { date: '2026-04-17', time: '18:30', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-04-17', time: '18:30', home: '삼성', away: 'LG', venue: '대구' },
+  { date: '2026-04-17', time: '18:30', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-04-17', time: '18:30', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-04-18', time: '14:00', home: '삼성', away: 'LG', venue: '대구' },
+  { date: '2026-04-18', time: '17:00', home: '두산', away: 'KIA', venue: '잠실' },
+  { date: '2026-04-18', time: '17:00', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-04-18', time: '17:00', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-04-18', time: '17:00', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-04-19', time: '14:00', home: '두산', away: 'KIA', venue: '잠실' },
+  { date: '2026-04-19', time: '14:00', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-04-19', time: '14:00', home: '삼성', away: 'LG', venue: '대구' },
+  { date: '2026-04-19', time: '14:00', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-04-19', time: '17:00', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-04-21', time: '18:30', home: 'LG', away: '한화', venue: '잠실' },
+  { date: '2026-04-21', time: '18:30', home: '롯데', away: '두산', venue: '사직' },
+  { date: '2026-04-21', time: '18:30', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-04-21', time: '18:30', home: 'KT', away: 'KIA', venue: '수원' },
+  { date: '2026-04-21', time: '18:30', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-04-22', time: '18:30', home: 'LG', away: '한화', venue: '잠실' },
+  { date: '2026-04-22', time: '18:30', home: '롯데', away: '두산', venue: '사직' },
+  { date: '2026-04-22', time: '18:30', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-04-22', time: '18:30', home: 'KT', away: 'KIA', venue: '수원' },
+  { date: '2026-04-22', time: '18:30', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-04-23', time: '18:30', home: 'LG', away: '한화', venue: '잠실' },
+  { date: '2026-04-23', time: '18:30', home: '롯데', away: '두산', venue: '사직' },
+  { date: '2026-04-23', time: '18:30', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-04-23', time: '18:30', home: 'KT', away: 'KIA', venue: '수원' },
+  { date: '2026-04-23', time: '18:30', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-04-24', time: '18:30', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-04-24', time: '18:30', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-04-24', time: '18:30', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-04-24', time: '18:30', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-04-24', time: '18:30', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-04-25', time: '14:00', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-04-25', time: '17:00', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-04-25', time: '17:00', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-04-25', time: '17:00', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-04-25', time: '17:00', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-04-26', time: '14:00', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-04-26', time: '14:00', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-04-26', time: '14:00', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-04-26', time: '14:00', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-04-26', time: '14:00', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-04-28', time: '18:30', home: '두산', away: '삼성', venue: '잠실' },
+  { date: '2026-04-28', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-04-28', time: '18:30', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-04-28', time: '18:30', home: 'KT', away: 'LG', venue: '수원' },
+  { date: '2026-04-28', time: '18:30', home: '한화', away: 'SSG', venue: '대전' },
+  { date: '2026-04-29', time: '18:30', home: '두산', away: '삼성', venue: '잠실' },
+  { date: '2026-04-29', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-04-29', time: '18:30', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-04-29', time: '18:30', home: 'KT', away: 'LG', venue: '수원' },
+  { date: '2026-04-29', time: '18:30', home: '한화', away: 'SSG', venue: '대전' },
+  { date: '2026-04-30', time: '18:30', home: '두산', away: '삼성', venue: '잠실' },
+  { date: '2026-04-30', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-04-30', time: '18:30', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-04-30', time: '18:30', home: 'KT', away: 'LG', venue: '수원' },
+  { date: '2026-04-30', time: '18:30', home: '한화', away: 'SSG', venue: '대전' },
+  { date: '2026-05-01', time: '17:00', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-05-01', time: '17:00', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-05-01', time: '17:00', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-05-01', time: '17:00', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-05-01', time: '17:00', home: '키움', away: '두산', venue: '고척' },
+  { date: '2026-05-02', time: '14:00', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-05-02', time: '17:00', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-05-02', time: '17:00', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-05-02', time: '17:00', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-05-02', time: '17:00', home: '키움', away: '두산', venue: '고척' },
+  { date: '2026-05-03', time: '14:00', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-05-03', time: '14:00', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-05-03', time: '14:00', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-05-03', time: '14:00', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-05-03', time: '14:00', home: '키움', away: '두산', venue: '고척' },
+  { date: '2026-05-05', time: '14:00', home: 'LG', away: '두산', venue: '잠실' },
+  { date: '2026-05-05', time: '14:00', home: 'SSG', away: 'NC', venue: '인천' },
+  { date: '2026-05-05', time: '14:00', home: '삼성', away: '키움', venue: '대구' },
+  { date: '2026-05-05', time: '14:00', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-05-05', time: '14:00', home: 'KIA', away: '한화', venue: '광주' },
+  { date: '2026-05-06', time: '18:30', home: 'LG', away: '두산', venue: '잠실' },
+  { date: '2026-05-06', time: '18:30', home: 'SSG', away: 'NC', venue: '인천' },
+  { date: '2026-05-06', time: '18:30', home: '삼성', away: '키움', venue: '대구' },
+  { date: '2026-05-06', time: '18:30', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-05-06', time: '18:30', home: 'KIA', away: '한화', venue: '광주' },
+  { date: '2026-05-07', time: '18:30', home: 'LG', away: '두산', venue: '잠실' },
+  { date: '2026-05-07', time: '18:30', home: 'SSG', away: 'NC', venue: '인천' },
+  { date: '2026-05-07', time: '18:30', home: '삼성', away: '키움', venue: '대구' },
+  { date: '2026-05-07', time: '18:30', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-05-07', time: '18:30', home: 'KIA', away: '한화', venue: '광주' },
+  { date: '2026-05-08', time: '18:30', home: '두산', away: 'SSG', venue: '잠실' },
+  { date: '2026-05-08', time: '18:30', home: '롯데', away: 'KIA', venue: '사직' },
+  { date: '2026-05-08', time: '18:30', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-05-08', time: '18:30', home: '키움', away: 'KT', venue: '고척' },
+  { date: '2026-05-08', time: '18:30', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-05-09', time: '17:00', home: '두산', away: 'SSG', venue: '잠실' },
+  { date: '2026-05-09', time: '17:00', home: '롯데', away: 'KIA', venue: '사직' },
+  { date: '2026-05-09', time: '17:00', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-05-09', time: '17:00', home: '키움', away: 'KT', venue: '고척' },
+  { date: '2026-05-09', time: '17:00', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-05-10', time: '14:00', home: '두산', away: 'SSG', venue: '잠실' },
+  { date: '2026-05-10', time: '14:00', home: '롯데', away: 'KIA', venue: '사직' },
+  { date: '2026-05-10', time: '14:00', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-05-10', time: '14:00', home: '키움', away: 'KT', venue: '고척' },
+  { date: '2026-05-10', time: '14:00', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-05-12', time: '18:30', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-05-12', time: '18:30', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-05-12', time: '18:30', home: 'KT', away: 'SSG', venue: '수원' },
+  { date: '2026-05-12', time: '18:30', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-05-12', time: '18:30', home: '키움', away: '한화', venue: '고척' },
+  { date: '2026-05-13', time: '18:30', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-05-13', time: '18:30', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-05-13', time: '18:30', home: 'KT', away: 'SSG', venue: '수원' },
+  { date: '2026-05-13', time: '18:30', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-05-13', time: '18:30', home: '키움', away: '한화', venue: '고척' },
+  { date: '2026-05-14', time: '18:30', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-05-14', time: '18:30', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-05-14', time: '18:30', home: 'KT', away: 'SSG', venue: '수원' },
+  { date: '2026-05-14', time: '18:30', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-05-14', time: '18:30', home: '키움', away: '한화', venue: '고척' },
+  { date: '2026-05-15', time: '18:30', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-05-15', time: '18:30', home: 'SSG', away: 'LG', venue: '인천' },
+  { date: '2026-05-15', time: '18:30', home: '삼성', away: 'KIA', venue: '대구' },
+  { date: '2026-05-15', time: '18:30', home: 'NC', away: '키움', venue: '창원' },
+  { date: '2026-05-15', time: '18:30', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-05-16', time: '17:00', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-05-16', time: '17:00', home: 'SSG', away: 'LG', venue: '인천' },
+  { date: '2026-05-16', time: '17:00', home: '삼성', away: 'KIA', venue: '대구' },
+  { date: '2026-05-16', time: '17:00', home: 'NC', away: '키움', venue: '창원' },
+  { date: '2026-05-16', time: '17:00', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-05-17', time: '14:00', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-05-17', time: '14:00', home: 'SSG', away: 'LG', venue: '인천' },
+  { date: '2026-05-17', time: '14:00', home: '삼성', away: 'KIA', venue: '대구' },
+  { date: '2026-05-17', time: '14:00', home: 'NC', away: '키움', venue: '창원' },
+  { date: '2026-05-17', time: '14:00', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-05-19', time: '18:30', home: '두산', away: 'NC', venue: '잠실' },
+  { date: '2026-05-19', time: '18:30', home: 'KIA', away: 'LG', venue: '광주' },
+  { date: '2026-05-19', time: '18:30', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-05-19', time: '18:30', home: '한화', away: '롯데', venue: '대전' },
+  { date: '2026-05-19', time: '18:30', home: '삼성', away: 'KT', venue: '포항' },
+  { date: '2026-05-20', time: '18:30', home: '두산', away: 'NC', venue: '잠실' },
+  { date: '2026-05-20', time: '18:30', home: 'KIA', away: 'LG', venue: '광주' },
+  { date: '2026-05-20', time: '18:30', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-05-20', time: '18:30', home: '한화', away: '롯데', venue: '대전' },
+  { date: '2026-05-20', time: '18:30', home: '삼성', away: 'KT', venue: '포항' },
+  { date: '2026-05-21', time: '18:30', home: '두산', away: 'NC', venue: '잠실' },
+  { date: '2026-05-21', time: '18:30', home: 'KIA', away: 'LG', venue: '광주' },
+  { date: '2026-05-21', time: '18:30', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-05-21', time: '18:30', home: '한화', away: '롯데', venue: '대전' },
+  { date: '2026-05-21', time: '18:30', home: '삼성', away: 'KT', venue: '포항' },
+  { date: '2026-05-22', time: '18:30', home: 'LG', away: '키움', venue: '잠실' },
+  { date: '2026-05-22', time: '18:30', home: '롯데', away: '삼성', venue: '사직' },
+  { date: '2026-05-22', time: '18:30', home: 'KT', away: 'NC', venue: '수원' },
+  { date: '2026-05-22', time: '18:30', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-05-22', time: '18:30', home: '한화', away: '두산', venue: '대전' },
+  { date: '2026-05-23', time: '17:00', home: 'LG', away: '키움', venue: '잠실' },
+  { date: '2026-05-23', time: '17:00', home: '롯데', away: '삼성', venue: '사직' },
+  { date: '2026-05-23', time: '17:00', home: 'KT', away: 'NC', venue: '수원' },
+  { date: '2026-05-23', time: '17:00', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-05-23', time: '17:00', home: '한화', away: '두산', venue: '대전' },
+  { date: '2026-05-24', time: '14:00', home: 'LG', away: '키움', venue: '잠실' },
+  { date: '2026-05-24', time: '14:00', home: '롯데', away: '삼성', venue: '사직' },
+  { date: '2026-05-24', time: '14:00', home: 'KT', away: 'NC', venue: '수원' },
+  { date: '2026-05-24', time: '14:00', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-05-24', time: '14:00', home: '한화', away: '두산', venue: '대전' },
+  { date: '2026-05-26', time: '18:30', home: '두산', away: 'KT', venue: '잠실' },
+  { date: '2026-05-26', time: '18:30', home: 'SSG', away: '삼성', venue: '인천' },
+  { date: '2026-05-26', time: '18:30', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-05-26', time: '18:30', home: 'NC', away: '한화', venue: '창원' },
+  { date: '2026-05-26', time: '18:30', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-05-27', time: '18:30', home: '두산', away: 'KT', venue: '잠실' },
+  { date: '2026-05-27', time: '18:30', home: 'SSG', away: '삼성', venue: '인천' },
+  { date: '2026-05-27', time: '18:30', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-05-27', time: '18:30', home: 'NC', away: '한화', venue: '창원' },
+  { date: '2026-05-27', time: '18:30', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-05-28', time: '18:30', home: '두산', away: 'KT', venue: '잠실' },
+  { date: '2026-05-28', time: '18:30', home: 'SSG', away: '삼성', venue: '인천' },
+  { date: '2026-05-28', time: '18:30', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-05-28', time: '18:30', home: 'NC', away: '한화', venue: '창원' },
+  { date: '2026-05-28', time: '18:30', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-05-29', time: '18:30', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-05-29', time: '18:30', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-05-29', time: '18:30', home: 'NC', away: '롯데', venue: '창원' },
+  { date: '2026-05-29', time: '18:30', home: '키움', away: 'KT', venue: '고척' },
+  { date: '2026-05-29', time: '18:30', home: '한화', away: 'SSG', venue: '대전' },
+  { date: '2026-05-30', time: '17:00', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-05-30', time: '17:00', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-05-30', time: '17:00', home: 'NC', away: '롯데', venue: '창원' },
+  { date: '2026-05-30', time: '17:00', home: '키움', away: 'KT', venue: '고척' },
+  { date: '2026-05-30', time: '17:00', home: '한화', away: 'SSG', venue: '대전' },
+  { date: '2026-05-31', time: '14:00', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-05-31', time: '14:00', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-05-31', time: '14:00', home: 'NC', away: '롯데', venue: '창원' },
+  { date: '2026-05-31', time: '14:00', home: '키움', away: 'KT', venue: '고척' },
+  { date: '2026-05-31', time: '14:00', home: '한화', away: 'SSG', venue: '대전' },
+  { date: '2026-06-02', time: '18:30', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-06-02', time: '18:30', home: 'SSG', away: '키움', venue: '인천' },
+  { date: '2026-06-02', time: '18:30', home: '삼성', away: 'NC', venue: '대구' },
+  { date: '2026-06-02', time: '18:30', home: 'KT', away: 'LG', venue: '수원' },
+  { date: '2026-06-02', time: '18:30', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-06-03', time: '17:00', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-06-03', time: '17:00', home: 'SSG', away: '키움', venue: '인천' },
+  { date: '2026-06-03', time: '17:00', home: '삼성', away: 'NC', venue: '대구' },
+  { date: '2026-06-03', time: '17:00', home: 'KT', away: 'LG', venue: '수원' },
+  { date: '2026-06-03', time: '17:00', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-06-04', time: '18:30', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-06-04', time: '18:30', home: 'SSG', away: '키움', venue: '인천' },
+  { date: '2026-06-04', time: '18:30', home: '삼성', away: 'NC', venue: '대구' },
+  { date: '2026-06-04', time: '18:30', home: 'KT', away: 'LG', venue: '수원' },
+  { date: '2026-06-04', time: '18:30', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-06-05', time: '18:30', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-06-05', time: '18:30', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-06-05', time: '18:30', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-06-05', time: '18:30', home: 'NC', away: 'LG', venue: '창원' },
+  { date: '2026-06-05', time: '18:30', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-06-06', time: '17:00', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-06-06', time: '17:00', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-06-06', time: '17:00', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-06-06', time: '17:00', home: 'NC', away: 'LG', venue: '창원' },
+  { date: '2026-06-06', time: '17:00', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-06-07', time: '17:00', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-06-07', time: '17:00', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-06-07', time: '17:00', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-06-07', time: '17:00', home: 'NC', away: 'LG', venue: '창원' },
+  { date: '2026-06-07', time: '17:00', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-06-09', time: '18:30', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-06-09', time: '18:30', home: '롯데', away: '두산', venue: '사직' },
+  { date: '2026-06-09', time: '18:30', home: 'KT', away: '삼성', venue: '수원' },
+  { date: '2026-06-09', time: '18:30', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-06-09', time: '18:30', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-06-10', time: '18:30', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-06-10', time: '18:30', home: '롯데', away: '두산', venue: '사직' },
+  { date: '2026-06-10', time: '18:30', home: 'KT', away: '삼성', venue: '수원' },
+  { date: '2026-06-10', time: '18:30', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-06-10', time: '18:30', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-06-11', time: '18:30', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-06-11', time: '18:30', home: '롯데', away: '두산', venue: '사직' },
+  { date: '2026-06-11', time: '18:30', home: 'KT', away: '삼성', venue: '수원' },
+  { date: '2026-06-11', time: '18:30', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-06-11', time: '18:30', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-06-12', time: '18:30', home: 'LG', away: '롯데', venue: '잠실' },
+  { date: '2026-06-12', time: '18:30', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-06-12', time: '18:30', home: 'KT', away: 'NC', venue: '수원' },
+  { date: '2026-06-12', time: '18:30', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-06-12', time: '18:30', home: '키움', away: '한화', venue: '고척' },
+  { date: '2026-06-13', time: '17:00', home: 'LG', away: '롯데', venue: '잠실' },
+  { date: '2026-06-13', time: '17:00', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-06-13', time: '17:00', home: 'KT', away: 'NC', venue: '수원' },
+  { date: '2026-06-13', time: '17:00', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-06-13', time: '17:00', home: '키움', away: '한화', venue: '고척' },
+  { date: '2026-06-14', time: '14:00', home: '키움', away: '한화', venue: '고척' },
+  { date: '2026-06-14', time: '17:00', home: 'LG', away: '롯데', venue: '잠실' },
+  { date: '2026-06-14', time: '17:00', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-06-14', time: '17:00', home: 'KT', away: 'NC', venue: '수원' },
+  { date: '2026-06-14', time: '17:00', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-06-16', time: '18:30', home: '두산', away: 'KT', venue: '잠실' },
+  { date: '2026-06-16', time: '18:30', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-06-16', time: '18:30', home: '삼성', away: '키움', venue: '대구' },
+  { date: '2026-06-16', time: '18:30', home: 'NC', away: '한화', venue: '창원' },
+  { date: '2026-06-16', time: '18:30', home: 'KIA', away: 'LG', venue: '광주' },
+  { date: '2026-06-17', time: '18:30', home: '두산', away: 'KT', venue: '잠실' },
+  { date: '2026-06-17', time: '18:30', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-06-17', time: '18:30', home: '삼성', away: '키움', venue: '대구' },
+  { date: '2026-06-17', time: '18:30', home: 'NC', away: '한화', venue: '창원' },
+  { date: '2026-06-17', time: '18:30', home: 'KIA', away: 'LG', venue: '광주' },
+  { date: '2026-06-18', time: '18:30', home: '두산', away: 'KT', venue: '잠실' },
+  { date: '2026-06-18', time: '18:30', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-06-18', time: '18:30', home: '삼성', away: '키움', venue: '대구' },
+  { date: '2026-06-18', time: '18:30', home: 'NC', away: '한화', venue: '창원' },
+  { date: '2026-06-18', time: '18:30', home: 'KIA', away: 'LG', venue: '광주' },
+  { date: '2026-06-19', time: '18:30', home: 'LG', away: '두산', venue: '잠실' },
+  { date: '2026-06-19', time: '18:30', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-06-19', time: '18:30', home: 'KT', away: 'KIA', venue: '수원' },
+  { date: '2026-06-19', time: '18:30', home: '키움', away: '롯데', venue: '고척' },
+  { date: '2026-06-19', time: '18:30', home: '한화', away: '삼성', venue: '대전' },
+  { date: '2026-06-20', time: '17:00', home: 'LG', away: '두산', venue: '잠실' },
+  { date: '2026-06-20', time: '17:00', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-06-20', time: '17:00', home: 'KT', away: 'KIA', venue: '수원' },
+  { date: '2026-06-20', time: '17:00', home: '키움', away: '롯데', venue: '고척' },
+  { date: '2026-06-20', time: '17:00', home: '한화', away: '삼성', venue: '대전' },
+  { date: '2026-06-21', time: '14:00', home: '키움', away: '롯데', venue: '고척' },
+  { date: '2026-06-21', time: '17:00', home: 'LG', away: '두산', venue: '잠실' },
+  { date: '2026-06-21', time: '17:00', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-06-21', time: '17:00', home: 'KT', away: 'KIA', venue: '수원' },
+  { date: '2026-06-21', time: '17:00', home: '한화', away: '삼성', venue: '대전' },
+  { date: '2026-06-23', time: '18:30', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-06-23', time: '18:30', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-06-23', time: '18:30', home: 'KT', away: 'SSG', venue: '수원' },
+  { date: '2026-06-23', time: '18:30', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-06-23', time: '18:30', home: '한화', away: '두산', venue: '대전' },
+  { date: '2026-06-24', time: '18:30', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-06-24', time: '18:30', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-06-24', time: '18:30', home: 'KT', away: 'SSG', venue: '수원' },
+  { date: '2026-06-24', time: '18:30', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-06-24', time: '18:30', home: '한화', away: '두산', venue: '대전' },
+  { date: '2026-06-25', time: '18:30', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-06-25', time: '18:30', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-06-25', time: '18:30', home: 'KT', away: 'SSG', venue: '수원' },
+  { date: '2026-06-25', time: '18:30', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-06-25', time: '18:30', home: '한화', away: '두산', venue: '대전' },
+  { date: '2026-06-26', time: '18:30', home: '두산', away: 'KIA', venue: '잠실' },
+  { date: '2026-06-26', time: '18:30', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-06-26', time: '18:30', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-06-26', time: '18:30', home: '삼성', away: 'KT', venue: '대구' },
+  { date: '2026-06-26', time: '18:30', home: 'NC', away: '키움', venue: '창원' },
+  { date: '2026-06-27', time: '17:00', home: '두산', away: 'KIA', venue: '잠실' },
+  { date: '2026-06-27', time: '17:00', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-06-27', time: '17:00', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-06-27', time: '17:00', home: '삼성', away: 'KT', venue: '대구' },
+  { date: '2026-06-27', time: '17:00', home: 'NC', away: '키움', venue: '창원' },
+  { date: '2026-06-28', time: '17:00', home: '두산', away: 'KIA', venue: '잠실' },
+  { date: '2026-06-28', time: '17:00', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-06-28', time: '17:00', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-06-28', time: '17:00', home: '삼성', away: 'KT', venue: '대구' },
+  { date: '2026-06-28', time: '17:00', home: 'NC', away: '키움', venue: '창원' },
+  { date: '2026-06-30', time: '18:30', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-06-30', time: '18:30', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-06-30', time: '18:30', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-06-30', time: '18:30', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-06-30', time: '18:30', home: '한화', away: 'KT', venue: '대전' },
+  { date: '2026-07-01', time: '18:30', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-07-01', time: '18:30', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-07-01', time: '18:30', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-07-01', time: '18:30', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-07-01', time: '18:30', home: '한화', away: 'KT', venue: '대전' },
+  { date: '2026-07-02', time: '18:30', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-07-02', time: '18:30', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-07-02', time: '18:30', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-07-02', time: '18:30', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-07-02', time: '18:30', home: '한화', away: 'KT', venue: '대전' },
+  { date: '2026-07-03', time: '18:30', home: 'LG', away: '한화', venue: '잠실' },
+  { date: '2026-07-03', time: '18:30', home: 'SSG', away: '삼성', venue: '인천' },
+  { date: '2026-07-03', time: '18:30', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-07-03', time: '18:30', home: 'KIA', away: 'NC', venue: '광주' },
+  { date: '2026-07-03', time: '18:30', home: '키움', away: '두산', venue: '고척' },
+  { date: '2026-07-04', time: '18:00', home: 'LG', away: '한화', venue: '잠실' },
+  { date: '2026-07-04', time: '18:00', home: 'SSG', away: '삼성', venue: '인천' },
+  { date: '2026-07-04', time: '18:00', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-07-04', time: '18:00', home: 'KIA', away: 'NC', venue: '광주' },
+  { date: '2026-07-04', time: '18:00', home: '키움', away: '두산', venue: '고척' },
+  { date: '2026-07-05', time: '14:00', home: '키움', away: '두산', venue: '고척' },
+  { date: '2026-07-05', time: '18:00', home: 'LG', away: '한화', venue: '잠실' },
+  { date: '2026-07-05', time: '18:00', home: 'SSG', away: '삼성', venue: '인천' },
+  { date: '2026-07-05', time: '18:00', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-07-05', time: '18:00', home: 'KIA', away: 'NC', venue: '광주' },
+  { date: '2026-07-07', time: '18:30', home: '두산', away: 'SSG', venue: '잠실' },
+  { date: '2026-07-07', time: '18:30', home: '롯데', away: 'KIA', venue: '사직' },
+  { date: '2026-07-07', time: '18:30', home: '삼성', away: 'LG', venue: '대구' },
+  { date: '2026-07-07', time: '18:30', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-07-07', time: '18:30', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-07-08', time: '18:30', home: '두산', away: 'SSG', venue: '잠실' },
+  { date: '2026-07-08', time: '18:30', home: '롯데', away: 'KIA', venue: '사직' },
+  { date: '2026-07-08', time: '18:30', home: '삼성', away: 'LG', venue: '대구' },
+  { date: '2026-07-08', time: '18:30', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-07-08', time: '18:30', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-07-09', time: '18:30', home: '두산', away: 'SSG', venue: '잠실' },
+  { date: '2026-07-09', time: '18:30', home: '롯데', away: 'KIA', venue: '사직' },
+  { date: '2026-07-09', time: '18:30', home: '삼성', away: 'LG', venue: '대구' },
+  { date: '2026-07-09', time: '18:30', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-07-09', time: '18:30', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-07-16', time: '18:30', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-07-16', time: '18:30', home: 'SSG', away: 'KIA', venue: '인천' },
+  { date: '2026-07-16', time: '18:30', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-07-16', time: '18:30', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-07-16', time: '18:30', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-07-17', time: '18:30', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-07-17', time: '18:30', home: 'SSG', away: 'KIA', venue: '인천' },
+  { date: '2026-07-17', time: '18:30', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-07-17', time: '18:30', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-07-17', time: '18:30', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-07-18', time: '18:00', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-07-18', time: '18:00', home: 'SSG', away: 'KIA', venue: '인천' },
+  { date: '2026-07-18', time: '18:00', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-07-18', time: '18:00', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-07-18', time: '18:00', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-07-19', time: '18:00', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-07-19', time: '18:00', home: 'SSG', away: 'KIA', venue: '인천' },
+  { date: '2026-07-19', time: '18:00', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-07-19', time: '18:00', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-07-19', time: '18:00', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-07-21', time: '18:30', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-07-21', time: '18:30', home: '롯데', away: 'SSG', venue: '사직' },
+  { date: '2026-07-21', time: '18:30', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-07-21', time: '18:30', home: 'KIA', away: '한화', venue: '광주' },
+  { date: '2026-07-21', time: '18:30', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-07-22', time: '18:30', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-07-22', time: '18:30', home: '롯데', away: 'SSG', venue: '사직' },
+  { date: '2026-07-22', time: '18:30', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-07-22', time: '18:30', home: 'KIA', away: '한화', venue: '광주' },
+  { date: '2026-07-22', time: '18:30', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-07-23', time: '18:30', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-07-23', time: '18:30', home: '롯데', away: 'SSG', venue: '사직' },
+  { date: '2026-07-23', time: '18:30', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-07-23', time: '18:30', home: 'KIA', away: '한화', venue: '광주' },
+  { date: '2026-07-23', time: '18:30', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-07-24', time: '18:30', home: '두산', away: '삼성', venue: '잠실' },
+  { date: '2026-07-24', time: '18:30', home: 'SSG', away: 'NC', venue: '인천' },
+  { date: '2026-07-24', time: '18:30', home: '롯데', away: 'KT', venue: '사직' },
+  { date: '2026-07-24', time: '18:30', home: 'KIA', away: '키움', venue: '광주' },
+  { date: '2026-07-24', time: '18:30', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-07-25', time: '18:00', home: '두산', away: '삼성', venue: '잠실' },
+  { date: '2026-07-25', time: '18:00', home: 'SSG', away: 'NC', venue: '인천' },
+  { date: '2026-07-25', time: '18:00', home: '롯데', away: 'KT', venue: '사직' },
+  { date: '2026-07-25', time: '18:00', home: 'KIA', away: '키움', venue: '광주' },
+  { date: '2026-07-25', time: '18:00', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-07-26', time: '18:00', home: '두산', away: '삼성', venue: '잠실' },
+  { date: '2026-07-26', time: '18:00', home: 'SSG', away: 'NC', venue: '인천' },
+  { date: '2026-07-26', time: '18:00', home: '롯데', away: 'KT', venue: '사직' },
+  { date: '2026-07-26', time: '18:00', home: 'KIA', away: '키움', venue: '광주' },
+  { date: '2026-07-26', time: '18:00', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-07-28', time: '18:30', home: 'LG', away: '키움', venue: '잠실' },
+  { date: '2026-07-28', time: '18:30', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-07-28', time: '18:30', home: '삼성', away: 'KIA', venue: '대구' },
+  { date: '2026-07-28', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-07-28', time: '18:30', home: '한화', away: '롯데', venue: '대전' },
+  { date: '2026-07-29', time: '18:30', home: 'LG', away: '키움', venue: '잠실' },
+  { date: '2026-07-29', time: '18:30', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-07-29', time: '18:30', home: '삼성', away: 'KIA', venue: '대구' },
+  { date: '2026-07-29', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-07-29', time: '18:30', home: '한화', away: '롯데', venue: '대전' },
+  { date: '2026-07-30', time: '18:30', home: 'LG', away: '키움', venue: '잠실' },
+  { date: '2026-07-30', time: '18:30', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-07-30', time: '18:30', home: '삼성', away: 'KIA', venue: '대구' },
+  { date: '2026-07-30', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-07-30', time: '18:30', home: '한화', away: '롯데', venue: '대전' },
+  { date: '2026-07-31', time: '18:30', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-07-31', time: '18:30', home: '롯데', away: '삼성', venue: '사직' },
+  { date: '2026-07-31', time: '18:30', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-07-31', time: '18:30', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-07-31', time: '18:30', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-08-01', time: '18:00', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-08-01', time: '18:00', home: '롯데', away: '삼성', venue: '사직' },
+  { date: '2026-08-01', time: '18:00', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-08-01', time: '18:00', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-08-01', time: '18:00', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-08-02', time: '14:00', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-08-02', time: '18:00', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-08-02', time: '18:00', home: '롯데', away: '삼성', venue: '사직' },
+  { date: '2026-08-02', time: '18:00', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-08-02', time: '18:00', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-08-04', time: '18:30', home: '두산', away: 'NC', venue: '잠실' },
+  { date: '2026-08-04', time: '18:30', home: 'SSG', away: 'LG', venue: '인천' },
+  { date: '2026-08-04', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-08-04', time: '18:30', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-08-04', time: '18:30', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-08-05', time: '18:30', home: '두산', away: 'NC', venue: '잠실' },
+  { date: '2026-08-05', time: '18:30', home: 'SSG', away: 'LG', venue: '인천' },
+  { date: '2026-08-05', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-08-05', time: '18:30', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-08-05', time: '18:30', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-08-06', time: '18:30', home: '두산', away: 'NC', venue: '잠실' },
+  { date: '2026-08-06', time: '18:30', home: 'SSG', away: 'LG', venue: '인천' },
+  { date: '2026-08-06', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-08-06', time: '18:30', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-08-06', time: '18:30', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-08-07', time: '18:30', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-08-07', time: '18:30', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-08-07', time: '18:30', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-08-07', time: '18:30', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-08-07', time: '18:30', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-08-08', time: '18:00', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-08-08', time: '18:00', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-08-08', time: '18:00', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-08-08', time: '18:00', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-08-08', time: '18:00', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-08-09', time: '18:00', home: 'LG', away: 'KIA', venue: '잠실' },
+  { date: '2026-08-09', time: '18:00', home: '삼성', away: '두산', venue: '대구' },
+  { date: '2026-08-09', time: '18:00', home: 'NC', away: 'SSG', venue: '창원' },
+  { date: '2026-08-09', time: '18:00', home: 'KT', away: '롯데', venue: '수원' },
+  { date: '2026-08-09', time: '18:00', home: '한화', away: '키움', venue: '대전' },
+  { date: '2026-08-11', time: '18:30', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-08-11', time: '18:30', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-08-11', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-08-11', time: '18:30', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-08-11', time: '18:30', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-08-12', time: '18:30', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-08-12', time: '18:30', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-08-12', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-08-12', time: '18:30', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-08-12', time: '18:30', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-08-13', time: '18:30', home: '두산', away: '한화', venue: '잠실' },
+  { date: '2026-08-13', time: '18:30', home: 'SSG', away: '롯데', venue: '인천' },
+  { date: '2026-08-13', time: '18:30', home: 'NC', away: 'KT', venue: '창원' },
+  { date: '2026-08-13', time: '18:30', home: 'KIA', away: '삼성', venue: '광주' },
+  { date: '2026-08-13', time: '18:30', home: '키움', away: 'LG', venue: '고척' },
+  { date: '2026-08-14', time: '18:30', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-08-14', time: '18:30', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-08-14', time: '18:30', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-08-14', time: '18:30', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-08-14', time: '18:30', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-08-15', time: '18:00', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-08-15', time: '18:00', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-08-15', time: '18:00', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-08-15', time: '18:00', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-08-15', time: '18:00', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-08-16', time: '18:00', home: 'LG', away: 'SSG', venue: '잠실' },
+  { date: '2026-08-16', time: '18:00', home: '롯데', away: 'NC', venue: '사직' },
+  { date: '2026-08-16', time: '18:00', home: '삼성', away: '한화', venue: '대구' },
+  { date: '2026-08-16', time: '18:00', home: 'KT', away: '키움', venue: '수원' },
+  { date: '2026-08-16', time: '18:00', home: 'KIA', away: '두산', venue: '광주' },
+  { date: '2026-08-18', time: '18:30', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-08-18', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-08-18', time: '18:30', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-08-18', time: '18:30', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-08-18', time: '18:30', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-08-19', time: '18:30', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-08-19', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-08-19', time: '18:30', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-08-19', time: '18:30', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-08-19', time: '18:30', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-08-20', time: '18:30', home: 'LG', away: 'KT', venue: '잠실' },
+  { date: '2026-08-20', time: '18:30', home: '롯데', away: '키움', venue: '사직' },
+  { date: '2026-08-20', time: '18:30', home: '삼성', away: 'SSG', venue: '대구' },
+  { date: '2026-08-20', time: '18:30', home: 'NC', away: '두산', venue: '창원' },
+  { date: '2026-08-20', time: '18:30', home: '한화', away: 'KIA', venue: '대전' },
+  { date: '2026-08-21', time: '18:30', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-08-21', time: '18:30', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-08-21', time: '18:30', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-08-21', time: '18:30', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-08-21', time: '18:30', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-08-22', time: '18:00', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-08-22', time: '18:00', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-08-22', time: '18:00', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-08-22', time: '18:00', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-08-22', time: '18:00', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-08-23', time: '14:00', home: '키움', away: 'KIA', venue: '고척' },
+  { date: '2026-08-23', time: '18:00', home: '두산', away: '롯데', venue: '잠실' },
+  { date: '2026-08-23', time: '18:00', home: 'SSG', away: 'KT', venue: '인천' },
+  { date: '2026-08-23', time: '18:00', home: 'NC', away: '삼성', venue: '창원' },
+  { date: '2026-08-23', time: '18:00', home: '한화', away: 'LG', venue: '대전' },
+  { date: '2026-08-25', time: '18:30', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-08-25', time: '18:30', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-08-25', time: '18:30', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-08-25', time: '18:30', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-08-25', time: '18:30', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-08-26', time: '18:30', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-08-26', time: '18:30', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-08-26', time: '18:30', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-08-26', time: '18:30', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-08-26', time: '18:30', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-08-27', time: '18:30', home: 'LG', away: 'NC', venue: '잠실' },
+  { date: '2026-08-27', time: '18:30', home: 'SSG', away: '한화', venue: '인천' },
+  { date: '2026-08-27', time: '18:30', home: 'KT', away: '두산', venue: '수원' },
+  { date: '2026-08-27', time: '18:30', home: 'KIA', away: '롯데', venue: '광주' },
+  { date: '2026-08-27', time: '18:30', home: '키움', away: '삼성', venue: '고척' },
+  { date: '2026-08-28', time: '18:30', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-08-28', time: '18:30', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-08-28', time: '18:30', home: '삼성', away: 'KT', venue: '대구' },
+  { date: '2026-08-28', time: '18:30', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-08-28', time: '18:30', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-08-29', time: '18:00', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-08-29', time: '18:00', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-08-29', time: '18:00', home: '삼성', away: 'KT', venue: '대구' },
+  { date: '2026-08-29', time: '18:00', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-08-29', time: '18:00', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-08-30', time: '18:00', home: '두산', away: '키움', venue: '잠실' },
+  { date: '2026-08-30', time: '18:00', home: '롯데', away: 'LG', venue: '사직' },
+  { date: '2026-08-30', time: '18:00', home: '삼성', away: 'KT', venue: '대구' },
+  { date: '2026-08-30', time: '18:00', home: 'KIA', away: 'SSG', venue: '광주' },
+  { date: '2026-08-30', time: '18:00', home: '한화', away: 'NC', venue: '대전' },
+  { date: '2026-09-01', time: '18:30', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-09-01', time: '18:30', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-09-01', time: '18:30', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-09-01', time: '18:30', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-09-01', time: '18:30', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-09-02', time: '18:30', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-09-02', time: '18:30', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-09-02', time: '18:30', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-09-02', time: '18:30', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-09-02', time: '18:30', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-09-03', time: '18:30', home: '두산', away: 'LG', venue: '잠실' },
+  { date: '2026-09-03', time: '18:30', home: '삼성', away: '롯데', venue: '대구' },
+  { date: '2026-09-03', time: '18:30', home: 'NC', away: 'KIA', venue: '창원' },
+  { date: '2026-09-03', time: '18:30', home: 'KT', away: '한화', venue: '수원' },
+  { date: '2026-09-03', time: '18:30', home: '키움', away: 'SSG', venue: '고척' },
+  { date: '2026-09-04', time: '18:30', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-09-04', time: '18:30', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-09-04', time: '18:30', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-09-04', time: '18:30', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-09-04', time: '18:30', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-09-05', time: '17:00', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-09-05', time: '17:00', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-09-05', time: '17:00', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-09-05', time: '17:00', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-09-05', time: '17:00', home: '키움', away: 'NC', venue: '고척' },
+  { date: '2026-09-06', time: '17:00', home: 'LG', away: '삼성', venue: '잠실' },
+  { date: '2026-09-06', time: '17:00', home: 'SSG', away: '두산', venue: '인천' },
+  { date: '2026-09-06', time: '17:00', home: '롯데', away: '한화', venue: '사직' },
+  { date: '2026-09-06', time: '17:00', home: 'KIA', away: 'KT', venue: '광주' },
+  { date: '2026-09-06', time: '17:00', home: '키움', away: 'NC', venue: '고척' },
 ];
 
-// ===================== RESULTS & STANDINGS =====================
-
-// 한화이글스 경기 결과 (이미 끝난 경기)
+// ===================== RESULTS & STANDINGS (한화 기준) =====================
 const GAME_RESULTS = {
-  '2026-03-28': { score: '10-9', result: 'W', note: '연장 11회' },
-  '2026-03-29': { score: '10-4', result: 'W' },
-  '2026-03-31': { score: '4-9', result: 'L' },
-  '2026-04-01': { score: '11-14', result: 'L' },
-  '2026-04-02': { score: '8-13', result: 'L' },
-  '2026-04-03': { score: '11-6', result: 'W' },
-  '2026-04-04': { score: '9-3', result: 'W' },
-  '2026-04-05': { score: '0-8', result: 'L' },
-  '2026-04-07': { score: '6-2', result: 'W' },
-  '2026-04-08': { score: '4-3', result: 'W' },
+  '한화': {
+    '2026-03-28': { score: '10-9', result: 'W', note: '연장 11회' },
+    '2026-03-29': { score: '10-4', result: 'W' },
+    '2026-03-31': { score: '4-9', result: 'L' },
+    '2026-04-01': { score: '11-14', result: 'L' },
+    '2026-04-02': { score: '8-13', result: 'L' },
+    '2026-04-03': { score: '11-6', result: 'W' },
+    '2026-04-04': { score: '9-3', result: 'W' },
+    '2026-04-05': { score: '0-8', result: 'L' },
+    '2026-04-07': { score: '6-2', result: 'W' },
+    '2026-04-08': { score: '4-3', result: 'W' },
+  },
 };
 
-// 현재 순위 (4/8 기준)
+// 순위 (구단별)
 const STANDINGS = {
-  rank: 3,
-  wins: 6,
-  losses: 4,
-  draws: 0,
-  pct: '.600',
-  gb: '1',
-  streak: 'W2', // 2연승
-  lastUpdate: '4/8',
+  '한화': { rank: 3, wins: 6, losses: 4, draws: 0, pct: '.600', gb: '1', streak: 'W2', lastUpdate: '4/8' },
+  '삼성': { rank: 5, wins: 5, losses: 5, draws: 0, pct: '.500', gb: '2', streak: 'L1', lastUpdate: '4/8' },
+  'LG':   { rank: 1, wins: 8, losses: 2, draws: 0, pct: '.800', gb: '-', streak: 'W4', lastUpdate: '4/8' },
+  '두산': { rank: 7, wins: 4, losses: 6, draws: 0, pct: '.400', gb: '3', streak: 'L2', lastUpdate: '4/8' },
+  'KT':   { rank: 4, wins: 5, losses: 5, draws: 0, pct: '.500', gb: '2', streak: 'W1', lastUpdate: '4/8' },
+  'SSG':  { rank: 6, wins: 4, losses: 6, draws: 0, pct: '.400', gb: '3', streak: 'L2', lastUpdate: '4/8' },
+  '키움': { rank: 8, wins: 3, losses: 7, draws: 0, pct: '.300', gb: '4', streak: 'L3', lastUpdate: '4/8' },
+  'KIA':  { rank: 2, wins: 7, losses: 3, draws: 0, pct: '.700', gb: '0.5', streak: 'W1', lastUpdate: '4/8' },
+  'NC':   { rank: 9, wins: 3, losses: 7, draws: 0, pct: '.300', gb: '4', streak: 'W1', lastUpdate: '4/8' },
+  '롯데': { rank: 10, wins: 2, losses: 8, draws: 0, pct: '.200', gb: '5', streak: 'L5', lastUpdate: '4/8' },
 };
 
-function getGameResult(dateStr) {
-  return GAME_RESULTS[dateStr] || null;
+// 상대팀 입장에서 결과를 뒤집어서 반환
+function getGameResult(teamKey, dateStr) {
+  // 한화 기준 결과가 있으면 해당 경기에서 teamKey의 결과를 반환
+  const hanwhaResult = GAME_RESULTS['한화'] && GAME_RESULTS['한화'][dateStr];
+  if (!hanwhaResult) return null;
+
+  // 해당 날짜 경기를 찾아서 teamKey가 관련되어 있는지 확인
+  const game = GAMES.find(g => g.date === dateStr && (g.home === teamKey || g.away === teamKey));
+  if (!game) return null;
+
+  if (teamKey === '한화') {
+    return hanwhaResult;
+  }
+
+  // 상대팀 입장: 결과 뒤집기, 스코어도 뒤집기
+  const flippedResult = hanwhaResult.result === 'W' ? 'L' : (hanwhaResult.result === 'L' ? 'W' : 'D');
+  const scoreParts = hanwhaResult.score.split('-');
+  const flippedScore = `${scoreParts[1]}-${scoreParts[0]}`;
+  return { score: flippedScore, result: flippedResult, note: hanwhaResult.note };
 }
 
 function renderRecordBanner() {
-  const s = STANDINGS;
+  const s = STANDINGS[selectedTeam];
+  if (!s) {
+    document.getElementById('recordBanner').innerHTML = '';
+    return;
+  }
   const streakClass = s.streak.startsWith('W') ? 'w-streak' : 'l-streak';
   const streakLabel = s.streak.startsWith('W') ? s.streak.replace('W','') + '연승' : s.streak.replace('L','') + '연패';
 
@@ -1083,9 +1750,14 @@ const VENUE_COORDS = {
   '잠실': { lat: 37.51, lon: 127.07 },
   '수원': { lat: 37.26, lon: 127.03 },
   '인천': { lat: 37.45, lon: 126.70 },
+  '대구': { lat: 35.84, lon: 128.68 },
+  '광주': { lat: 35.17, lon: 126.89 },
+  '고척': { lat: 37.50, lon: 126.87 },
+  '창원': { lat: 35.22, lon: 128.58 },
+  '사직': { lat: 35.19, lon: 129.06 },
+  '포항': { lat: 36.01, lon: 129.36 },
 };
 
-// WMO Weather Code → emoji + 한글
 function weatherCodeToInfo(code) {
   if (code === 0) return { icon: '\u2600\uFE0F', desc: '맑음' };
   if (code <= 3) return { icon: '\u26C5', desc: '구름 조금' };
@@ -1101,7 +1773,6 @@ function weatherCodeToInfo(code) {
   return { icon: '\u2601\uFE0F', desc: '흐림' };
 }
 
-// 날씨 캐시: { 'venue-date': { icon, desc, tempMax, tempMin, rain } }
 let weatherCache = {};
 let weatherLoaded = false;
 
@@ -1133,14 +1804,14 @@ async function fetchWeather() {
 }
 
 function getWeather(venue, date) {
-  const v = venue === '잠실' ? '잠실' : venue;
-  return weatherCache[`${v}-${date}`] || null;
+  return weatherCache[`${venue}-${date}`] || null;
 }
 
 // ===================== STATE =====================
+let selectedTeam = '한화';
 let currentYear = 2026;
-let currentMonth = new Date().getMonth(); // 0-indexed
-let activeVenues = new Set(['대전', '잠실', '수원', '인천']);
+let currentMonth = new Date().getMonth();
+let activeVenues = new Set();
 const today = new Date();
 
 // ===================== HELPERS =====================
@@ -1162,7 +1833,6 @@ function isWeekendOrHoliday(ds) {
   return isWeekend(d) || isHoliday(ds);
 }
 
-// 다음날이 토요일 또는 공휴일인지 (전야제 경기)
 function isDayBeforeOffDay(ds) {
   const d = new Date(ds);
   const next = new Date(d);
@@ -1175,30 +1845,44 @@ function isTargetDay(ds) {
   return isWeekendOrHoliday(ds) || isDayBeforeOffDay(ds);
 }
 
-// 접근 가능 구장 목록
-const ACCESSIBLE_VENUES = ['대전', '잠실', '수원', '인천'];
+// 선택 구단 경기 가져오기
+function getTeamGames() {
+  return GAMES.filter(g => g.home === selectedTeam || g.away === selectedTeam);
+}
+
+// 선택 구단 입장에서 경기 정보
+function getGamePerspective(game) {
+  const isHome = game.home === selectedTeam;
+  return {
+    opponent: isHome ? game.away : game.home,
+    homeAway: isHome ? 'HOME' : 'AWAY',
+  };
+}
+
+// 구단이 경기하는 모든 구장 목록
+function getTeamVenues() {
+  const venues = new Set();
+  getTeamGames().forEach(g => venues.add(g.venue));
+  return [...venues];
+}
 
 function getFilteredGames() {
-  return GAMES.filter(g => {
-    const venueMatch = ACCESSIBLE_VENUES.includes(g.venue) && activeVenues.has(g.venue);
-    const targetDay = isTargetDay(g.date);
-    return venueMatch && targetDay;
-  });
+  return getTeamGames().filter(g => activeVenues.has(g.venue));
 }
 
 function getTicketKey(game) {
   if (game.venue === '잠실') {
-    if (game.opponent === 'LG') return '잠실_LG';
-    if (game.opponent === '두산') return '잠실_두산';
-    // LG/두산 홈경기 구분: 한화가 away이면 상대가 홈팀
-    return game.opponent === 'LG' ? '잠실_LG' : '잠실_두산';
+    // 잠실 홈팀이 LG인지 두산인지
+    if (game.home === 'LG') return '잠실_LG';
+    if (game.home === '두산') return '잠실_두산';
+    return '잠실_두산';
   }
   return game.venue;
 }
 
 function getTicketOpenDate(game) {
   const key = getTicketKey(game);
-  const info = TICKET_INFO[key];
+  const info = TICKET_INFO[key] || TICKET_INFO[game.venue];
   if (!info) return null;
   const gameDate = new Date(game.date);
   const openDate = new Date(gameDate);
@@ -1213,6 +1897,67 @@ function getTicketOpenDate(game) {
   };
 }
 
+// ===================== TEAM SELECTOR =====================
+function renderTeamSelector() {
+  const container = document.getElementById('teamSelector');
+  let html = '';
+  TEAM_ORDER.forEach(key => {
+    const team = TEAMS[key];
+    const isActive = key === selectedTeam;
+    const bgStyle = isActive ? `background:${team.color};` : '';
+    html += `<button class="team-btn${isActive ? ' active' : ''}" style="${bgStyle}" onclick="selectTeam('${key}')">
+      <span class="team-emoji">${team.icon}</span>${team.short}
+    </button>`;
+  });
+  container.innerHTML = html;
+}
+
+function selectTeam(teamKey) {
+  selectedTeam = teamKey;
+  applyTeamTheme();
+  renderTeamSelector();
+  buildFilterBar();
+  renderCalendar();
+  renderRecordBanner();
+  updateDataNotice();
+}
+
+function applyTeamTheme() {
+  const team = TEAMS[selectedTeam];
+  const root = document.documentElement;
+  root.style.setProperty('--primary', team.color);
+  root.style.setProperty('--primary-light', team.lightColor);
+  root.style.setProperty('--game-bg', team.lightColor);
+  root.style.setProperty('--today-border', team.color);
+
+  document.getElementById('headerTitle').innerHTML =
+    `<span class="team-icon">${team.icon}</span> ${team.name} 예매 캘린더`;
+  document.title = `${team.name} 경기 & 예매 캘린더`;
+}
+
+function buildFilterBar() {
+  const venues = getTeamVenues();
+  const homeVenue = TEAMS[selectedTeam].homeVenue;
+  activeVenues = new Set(venues);
+
+  let html = `<button class="filter-chip active" data-venue="all" onclick="toggleFilter(this)">전체</button>`;
+  venues.sort((a, b) => {
+    if (a === homeVenue) return -1;
+    if (b === homeVenue) return 1;
+    return a.localeCompare(b);
+  });
+  venues.forEach(v => {
+    const label = v === homeVenue ? `${v} (홈)` : v;
+    html += `<button class="filter-chip active" data-venue="${v}" onclick="toggleFilter(this)">${label}</button>`;
+  });
+  document.getElementById('filterBar').innerHTML = html;
+}
+
+function updateDataNotice() {
+  const notice = document.getElementById('dataNotice');
+  notice.textContent = '* KBO 공식 일정 기준 (2026 정규시즌 670경기)';
+}
+
 // ===================== RENDER =====================
 function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
@@ -1224,14 +1969,11 @@ function renderCalendar() {
   const lastDay = new Date(currentYear, currentMonth + 1, 0);
   const startDow = firstDay.getDay();
   const daysInMonth = lastDay.getDate();
-
-  // Get prev month days
   const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
 
-  // Get filtered games
   const filteredGames = getFilteredGames();
 
-  // Build ticket open events for this month
+  // Build ticket open events
   const ticketEvents = {};
   filteredGames.forEach(g => {
     const to = getTicketOpenDate(g);
@@ -1287,35 +2029,40 @@ function renderCalendar() {
     const isPast = new Date(cellDate) < new Date(todayStr);
 
     if (isPast || cellDate === todayStr) {
-      // 지난 날짜 + 오늘: 결과만 심플 텍스트로 (필터 무관, 전체 경기)
-      const allDayGames = GAMES.filter(g => g.date === cellDate);
+      // 지난/오늘 경기: 결과 표시
+      const allDayGames = getTeamGames().filter(g => g.date === cellDate);
       allDayGames.forEach(g => {
-        const gr = getGameResult(g.date);
+        const gr = getGameResult(selectedTeam, g.date);
+        const perspective = getGamePerspective(g);
         if (gr) {
           const color = gr.result === 'W' ? '#1D4ED8' : '#DC2626';
           const label = gr.result === 'W' ? 'W' : 'L';
-          html += `<div style="font-size:10px;color:${color};font-weight:600;line-height:1.5;cursor:pointer;" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>vs ${g.opponent} ${label} ${gr.score}</div>`;
+          html += `<div style="font-size:10px;color:${color};font-weight:600;line-height:1.5;cursor:pointer;" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>vs ${perspective.opponent} ${label} ${gr.score}</div>`;
+        } else {
+          // 결과 없는 과거/오늘 경기
+          html += `<div style="font-size:10px;color:var(--gray);line-height:1.5;cursor:pointer;" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>vs ${perspective.opponent} @ ${g.venue}</div>`;
         }
       });
     } else {
-      // 미래: 기존 경기/예매 태그
+      // 미래 경기
       const dayGames = gameEvents[cellDate] || [];
       dayGames.forEach(g => {
-        const venueLabel = g.homeAway === 'HOME' ? '홈' : g.venue;
+        const perspective = getGamePerspective(g);
+        const venueLabel = perspective.homeAway === 'HOME' ? '홈' : g.venue;
         const isEve = !isWeekendOrHoliday(g.date) && isDayBeforeOffDay(g.date);
         const eveClass = isEve ? ' eve-game' : '';
-        const eveBadge = '';
         const w = getWeather(g.venue, g.date);
         const weatherHtml = w ? ` <span class="weather-badge"><span class="weather-icon">${w.icon}</span><span class="weather-temp">${w.tempMax}°</span></span>` : '';
         html += `<div class="event-tag game${eveClass}" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>`
-          + `${g.time} vs ${g.opponent} <span class="venue-badge">${venueLabel}</span>${eveBadge}${weatherHtml}</div>`;
+          + `${g.time} vs ${perspective.opponent} <span class="venue-badge">${venueLabel}</span>${weatherHtml}</div>`;
       });
 
-      // Ticket events (미래만)
+      // Ticket events
       const dayTickets = ticketEvents[cellDate] || [];
       dayTickets.forEach(t => {
+        const perspective = getGamePerspective(t.game);
         html += `<div class="event-tag ticket" onclick='showTicketDetail(${JSON.stringify(t).replace(/'/g, "\\'")})'>`
-          + `${t.time} 예매오픈 <span class="venue-badge">${t.game.opponent}</span></div>`;
+          + `${t.time} 예매오픈 <span class="venue-badge">${perspective.opponent}</span></div>`;
       });
     }
 
@@ -1328,9 +2075,7 @@ function renderCalendar() {
 
 function renderUpcoming(filteredGames, ticketEvents) {
   const banner = document.getElementById('upcomingBanner');
-  const todayStr = dateStr(today.getFullYear(), today.getMonth(), today.getDate());
 
-  // Collect upcoming events (next 14 days)
   const upcoming = [];
   for (let i = 0; i < 14; i++) {
     const d = new Date(today);
@@ -1361,18 +2106,18 @@ function renderUpcoming(filteredGames, ticketEvents) {
 
     if (item.type === 'game') {
       const g = item.data;
-      const gJson = JSON.stringify(g).replace(/'/g, "\\'").replace(/"/g, '&quot;');
-      html += `<div class="upcoming-item" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\\'")})'>
+      const perspective = getGamePerspective(g);
+      html += `<div class="upcoming-item" onclick='showGameDetail(${JSON.stringify(g).replace(/'/g, "\\'")})'>
         <span class="upcoming-date">${dateLabel}</span>
-        <span class="upcoming-detail"><strong>${g.time}</strong> vs ${g.opponent} @ ${g.venue}</span>
+        <span class="upcoming-detail"><strong>${g.time}</strong> vs ${perspective.opponent} @ ${g.venue}</span>
         <span class="upcoming-type game">경기</span>
       </div>`;
     } else {
       const t = item.data;
-      const tJson = JSON.stringify(t).replace(/'/g, "\\'").replace(/"/g, '&quot;');
-      html += `<div class="upcoming-item" onclick='showTicketDetail(${JSON.stringify(t).replace(/'/g, "\\\'")})'>
+      const perspective = getGamePerspective(t.game);
+      html += `<div class="upcoming-item" onclick='showTicketDetail(${JSON.stringify(t).replace(/'/g, "\\'")})'>
         <span class="upcoming-date ticket-date">${dateLabel}</span>
-        <span class="upcoming-detail"><strong>${t.time}</strong> ${t.game.opponent}전 예매 (${t.platform})</span>
+        <span class="upcoming-detail"><strong>${t.time}</strong> ${perspective.opponent}전 예매 (${t.platform})</span>
         <span class="upcoming-type ticket">예매</span>
       </div>`;
     }
@@ -1416,16 +2161,16 @@ function buildSeatPriceTable(venue) {
 
 function showGameDetail(game) {
   const key = getTicketKey(game);
-  const info = TICKET_INFO[key];
+  const info = TICKET_INFO[key] || TICKET_INFO[game.venue];
   const to = getTicketOpenDate(game);
   const tbUrl = getTicketbayUrl(game);
+  const perspective = getGamePerspective(game);
 
   let html = `<div class="modal-header"><h3>경기 상세 정보</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>`;
 
-  // 경기 결과 (지난 경기)
-  const gr = getGameResult(game.date);
+  // 경기 결과
+  const gr = getGameResult(selectedTeam, game.date);
   if (gr) {
-    const rc = gr.result === 'W' ? 'win' : 'lose';
     const resultText = gr.result === 'W' ? '승리' : '패배';
     html += `<div class="modal-section" style="background:${gr.result === 'W' ? '#EFF6FF' : '#FEF2F2'}; text-align:center;">
       <div style="font-size:22px;font-weight:800;color:${gr.result === 'W' ? '#1D4ED8' : '#DC2626'}">${resultText}</div>
@@ -1434,7 +2179,7 @@ function showGameDetail(game) {
     </div>`;
   }
 
-  // 날씨 정보 (미래 경기만)
+  // 날씨 (미래만)
   if (!gr) {
     const w = getWeather(game.venue, game.date);
     if (w) {
@@ -1453,8 +2198,9 @@ function showGameDetail(game) {
     <h4>&#9918; 경기 정보</h4>
     <div class="info-row"><span class="info-label">날짜</span><span class="info-value">${game.date} (${['일','월','화','수','목','금','토'][new Date(game.date).getDay()]})</span></div>
     <div class="info-row"><span class="info-label">시간</span><span class="info-value">${game.time}</span></div>
-    <div class="info-row"><span class="info-label">상대</span><span class="info-value">${game.opponent}</span></div>
-    <div class="info-row"><span class="info-label">장소</span><span class="info-value">${game.venue} (${game.homeAway === 'HOME' ? '홈' : '원정'})</span></div>
+    <div class="info-row"><span class="info-label">상대</span><span class="info-value">${perspective.opponent}</span></div>
+    <div class="info-row"><span class="info-label">장소</span><span class="info-value">${game.venue} (${perspective.homeAway === 'HOME' ? '홈' : '원정'})</span></div>
+    <div class="info-row"><span class="info-label">홈팀</span><span class="info-value">${TEAMS[game.home].name}</span></div>
   </div>`;
 
   if (info && to) {
@@ -1468,10 +2214,8 @@ function showGameDetail(game) {
     </div>`;
   }
 
-  // 좌석별 가격표
   html += buildSeatPriceTable(game.venue);
 
-  // 티켓베이 링크
   if (tbUrl) {
     html += `<div style="text-align:center; margin-top:4px;">
       <a href="${tbUrl}" target="_blank" class="ticketbay-btn">&#127915; 티켓베이에서 리셀 티켓 확인</a>
@@ -1483,8 +2227,9 @@ function showGameDetail(game) {
 }
 
 function showTicketDetail(ticket) {
-  const info = TICKET_INFO[getTicketKey(ticket.game)];
+  const info = TICKET_INFO[getTicketKey(ticket.game)] || TICKET_INFO[ticket.game.venue];
   const game = ticket.game;
+  const perspective = getGamePerspective(game);
 
   let html = `<div class="modal-header"><h3>예매 오픈 상세</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>`;
 
@@ -1500,8 +2245,8 @@ function showTicketDetail(ticket) {
     <h4>&#9918; 대상 경기</h4>
     <div class="info-row"><span class="info-label">날짜</span><span class="info-value">${game.date} (${['일','월','화','수','목','금','토'][new Date(game.date).getDay()]})</span></div>
     <div class="info-row"><span class="info-label">시간</span><span class="info-value">${game.time}</span></div>
-    <div class="info-row"><span class="info-label">상대</span><span class="info-value">${game.opponent}</span></div>
-    <div class="info-row"><span class="info-label">장소</span><span class="info-value">${game.venue} (${game.homeAway === 'HOME' ? '홈' : '원정'})</span></div>
+    <div class="info-row"><span class="info-label">상대</span><span class="info-value">${perspective.opponent}</span></div>
+    <div class="info-row"><span class="info-label">장소</span><span class="info-value">${game.venue} (${perspective.homeAway === 'HOME' ? '홈' : '원정'})</span></div>
   </div>`;
 
   document.getElementById('modalContent').innerHTML = html;
@@ -1530,14 +2275,16 @@ function goToday() {
 
 function toggleFilter(btn) {
   const venue = btn.dataset.venue;
+  const allVenues = getTeamVenues();
+
   if (venue === 'all') {
-    const allActive = activeVenues.size === 4;
+    const allActive = activeVenues.size === allVenues.length;
     if (allActive) {
       activeVenues.clear();
       document.querySelectorAll('.filter-chip:not([data-venue="all"])').forEach(c => c.classList.remove('active'));
       btn.classList.remove('active');
     } else {
-      ACCESSIBLE_VENUES.forEach(v => activeVenues.add(v));
+      allVenues.forEach(v => activeVenues.add(v));
       document.querySelectorAll('.filter-chip').forEach(c => c.classList.add('active'));
     }
   } else {
@@ -1548,21 +2295,22 @@ function toggleFilter(btn) {
       activeVenues.add(venue);
       btn.classList.add('active');
     }
-    // Update "all" chip
     const allChip = document.querySelector('.filter-chip[data-venue="all"]');
-    if (activeVenues.size === 4) allChip.classList.add('active');
+    if (activeVenues.size === allVenues.length) allChip.classList.add('active');
     else allChip.classList.remove('active');
   }
   renderCalendar();
 }
 
 // ===================== INIT =====================
-// Start at current month
 currentYear = today.getFullYear();
 currentMonth = today.getMonth();
+renderTeamSelector();
+applyTeamTheme();
+buildFilterBar();
 renderCalendar();
 renderRecordBanner();
-// 날씨 데이터 비동기 로드 후 자동 갱신
+updateDataNotice();
 fetchWeather();
 </script>
 </body>
