@@ -1,0 +1,605 @@
+{
+  "results": [
+    {
+      "date": "2026-03-28",
+      "away": "KT",
+      "home": "LG",
+      "awayScore": 11,
+      "homeScore": 7
+    },
+    {
+      "date": "2026-03-28",
+      "away": "KIA",
+      "home": "SSG",
+      "awayScore": 6,
+      "homeScore": 7
+    },
+    {
+      "date": "2026-03-28",
+      "away": "롯데",
+      "home": "삼성",
+      "awayScore": 6,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-03-28",
+      "away": "두산",
+      "home": "NC",
+      "awayScore": 0,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-03-28",
+      "away": "키움",
+      "home": "한화",
+      "awayScore": 9,
+      "homeScore": 10
+    },
+    {
+      "date": "2026-03-29",
+      "away": "KT",
+      "home": "LG",
+      "awayScore": 6,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-03-29",
+      "away": "KIA",
+      "home": "SSG",
+      "awayScore": 6,
+      "homeScore": 11
+    },
+    {
+      "date": "2026-03-29",
+      "away": "롯데",
+      "home": "삼성",
+      "awayScore": 6,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-03-29",
+      "away": "두산",
+      "home": "NC",
+      "awayScore": 9,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-03-29",
+      "away": "키움",
+      "home": "한화",
+      "awayScore": 4,
+      "homeScore": 10
+    },
+    {
+      "date": "2026-03-31",
+      "away": "KIA",
+      "home": "LG",
+      "awayScore": 7,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-03-31",
+      "away": "키움",
+      "home": "SSG",
+      "awayScore": 3,
+      "homeScore": 9
+    },
+    {
+      "date": "2026-03-31",
+      "away": "롯데",
+      "home": "NC",
+      "awayScore": 2,
+      "homeScore": 9
+    },
+    {
+      "date": "2026-03-31",
+      "away": "KT",
+      "home": "한화",
+      "awayScore": 9,
+      "homeScore": 4
+    },
+    {
+      "date": "2026-04-01",
+      "away": "KIA",
+      "home": "LG",
+      "awayScore": 2,
+      "homeScore": 7
+    },
+    {
+      "date": "2026-04-01",
+      "away": "키움",
+      "home": "SSG",
+      "awayScore": 11,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-01",
+      "away": "두산",
+      "home": "삼성",
+      "awayScore": 3,
+      "homeScore": 13
+    },
+    {
+      "date": "2026-04-01",
+      "away": "롯데",
+      "home": "NC",
+      "awayScore": 4,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-01",
+      "away": "KT",
+      "home": "한화",
+      "awayScore": 14,
+      "homeScore": 11
+    },
+    {
+      "date": "2026-04-02",
+      "away": "KIA",
+      "home": "LG",
+      "awayScore": 1,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-02",
+      "away": "키움",
+      "home": "SSG",
+      "awayScore": 1,
+      "homeScore": 11
+    },
+    {
+      "date": "2026-04-02",
+      "away": "두산",
+      "home": "삼성",
+      "awayScore": 2,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-02",
+      "away": "롯데",
+      "home": "NC",
+      "awayScore": 4,
+      "homeScore": 8
+    },
+    {
+      "date": "2026-04-02",
+      "away": "KT",
+      "home": "한화",
+      "awayScore": 13,
+      "homeScore": 8
+    },
+    {
+      "date": "2026-04-03",
+      "away": "한화",
+      "home": "두산",
+      "awayScore": 11,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-03",
+      "away": "SSG",
+      "home": "롯데",
+      "awayScore": 17,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-03",
+      "away": "삼성",
+      "home": "KT",
+      "awayScore": 2,
+      "homeScore": 1
+    },
+    {
+      "date": "2026-04-03",
+      "away": "NC",
+      "home": "KIA",
+      "awayScore": 5,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-03",
+      "away": "LG",
+      "home": "키움",
+      "awayScore": 2,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-04",
+      "away": "한화",
+      "home": "두산",
+      "awayScore": 9,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-04",
+      "away": "SSG",
+      "home": "롯데",
+      "awayScore": 7,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-04",
+      "away": "삼성",
+      "home": "KT",
+      "awayScore": 8,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-04",
+      "away": "NC",
+      "home": "KIA",
+      "awayScore": 6,
+      "homeScore": 0
+    },
+    {
+      "date": "2026-04-04",
+      "away": "LG",
+      "home": "키움",
+      "awayScore": 6,
+      "homeScore": 4
+    },
+    {
+      "date": "2026-04-05",
+      "away": "한화",
+      "home": "두산",
+      "awayScore": 0,
+      "homeScore": 8
+    },
+    {
+      "date": "2026-04-05",
+      "away": "SSG",
+      "home": "롯데",
+      "awayScore": 4,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-05",
+      "away": "삼성",
+      "home": "KT",
+      "awayScore": 0,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-05",
+      "away": "NC",
+      "home": "KIA",
+      "awayScore": 0,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-05",
+      "away": "LG",
+      "home": "키움",
+      "awayScore": 6,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-07",
+      "away": "키움",
+      "home": "두산",
+      "awayScore": 5,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-07",
+      "away": "한화",
+      "home": "SSG",
+      "awayScore": 6,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-07",
+      "away": "KT",
+      "home": "롯데",
+      "awayScore": 7,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-07",
+      "away": "LG",
+      "home": "NC",
+      "awayScore": 2,
+      "homeScore": 0
+    },
+    {
+      "date": "2026-04-07",
+      "away": "삼성",
+      "home": "KIA",
+      "awayScore": 10,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-08",
+      "away": "키움",
+      "home": "두산",
+      "awayScore": 3,
+      "homeScore": 7
+    },
+    {
+      "date": "2026-04-08",
+      "away": "한화",
+      "home": "SSG",
+      "awayScore": 4,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-08",
+      "away": "KT",
+      "home": "롯데",
+      "awayScore": 1,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-08",
+      "away": "LG",
+      "home": "NC",
+      "awayScore": 5,
+      "homeScore": 4
+    },
+    {
+      "date": "2026-04-08",
+      "away": "삼성",
+      "home": "KIA",
+      "awayScore": 5,
+      "homeScore": 15
+    },
+    {
+      "date": "2026-04-10",
+      "away": "SSG",
+      "home": "LG",
+      "awayScore": 2,
+      "homeScore": 10
+    },
+    {
+      "date": "2026-04-10",
+      "away": "NC",
+      "home": "삼성",
+      "awayScore": 5,
+      "homeScore": 8
+    },
+    {
+      "date": "2026-04-10",
+      "away": "두산",
+      "home": "KT",
+      "awayScore": 8,
+      "homeScore": 7
+    },
+    {
+      "date": "2026-04-10",
+      "away": "롯데",
+      "home": "키움",
+      "awayScore": 3,
+      "homeScore": 1
+    },
+    {
+      "date": "2026-04-10",
+      "away": "KIA",
+      "home": "한화",
+      "awayScore": 6,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-11",
+      "away": "KIA",
+      "home": "한화",
+      "awayScore": 6,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-11",
+      "away": "SSG",
+      "home": "LG",
+      "awayScore": 3,
+      "homeScore": 4
+    },
+    {
+      "date": "2026-04-11",
+      "away": "NC",
+      "home": "삼성",
+      "awayScore": 4,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-11",
+      "away": "두산",
+      "home": "KT",
+      "awayScore": 4,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-11",
+      "away": "롯데",
+      "home": "키움",
+      "awayScore": 3,
+      "homeScore": 1
+    },
+    {
+      "date": "2026-04-12",
+      "away": "SSG",
+      "home": "LG",
+      "awayScore": 1,
+      "homeScore": 9
+    },
+    {
+      "date": "2026-04-12",
+      "away": "NC",
+      "home": "삼성",
+      "awayScore": 3,
+      "homeScore": 9
+    },
+    {
+      "date": "2026-04-12",
+      "away": "두산",
+      "home": "KT",
+      "awayScore": 1,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-12",
+      "away": "롯데",
+      "home": "키움",
+      "awayScore": 0,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-12",
+      "away": "KIA",
+      "home": "한화",
+      "awayScore": 9,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-14",
+      "away": "롯데",
+      "home": "LG",
+      "awayScore": 1,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-14",
+      "away": "두산",
+      "home": "SSG",
+      "awayScore": 11,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-14",
+      "away": "KT",
+      "home": "NC",
+      "awayScore": 4,
+      "homeScore": 7
+    },
+    {
+      "date": "2026-04-14",
+      "away": "키움",
+      "home": "KIA",
+      "awayScore": 2,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-14",
+      "away": "삼성",
+      "home": "한화",
+      "awayScore": 6,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-15",
+      "away": "롯데",
+      "home": "LG",
+      "awayScore": 2,
+      "homeScore": 0
+    },
+    {
+      "date": "2026-04-15",
+      "away": "두산",
+      "home": "SSG",
+      "awayScore": 0,
+      "homeScore": 6
+    },
+    {
+      "date": "2026-04-15",
+      "away": "KT",
+      "home": "NC",
+      "awayScore": 10,
+      "homeScore": 2
+    },
+    {
+      "date": "2026-04-15",
+      "away": "키움",
+      "home": "KIA",
+      "awayScore": 5,
+      "homeScore": 7
+    },
+    {
+      "date": "2026-04-15",
+      "away": "삼성",
+      "home": "한화",
+      "awayScore": 13,
+      "homeScore": 5
+    }
+  ],
+  "standings": {
+    "삼성": {
+      "rank": 1,
+      "wins": 10,
+      "losses": 4,
+      "draws": 0,
+      "pct": ".714",
+      "gb": "-"
+    },
+    "LG": {
+      "rank": 2,
+      "wins": 10,
+      "losses": 5,
+      "draws": 0,
+      "pct": ".667",
+      "gb": "0.5"
+    },
+    "KT": {
+      "rank": 3,
+      "wins": 10,
+      "losses": 5,
+      "draws": 0,
+      "pct": ".667",
+      "gb": "0.5"
+    },
+    "SSG": {
+      "rank": 4,
+      "wins": 8,
+      "losses": 7,
+      "draws": 0,
+      "pct": ".533",
+      "gb": "2.5"
+    },
+    "KIA": {
+      "rank": 5,
+      "wins": 8,
+      "losses": 7,
+      "draws": 0,
+      "pct": ".533",
+      "gb": "2.5"
+    },
+    "NC": {
+      "rank": 6,
+      "wins": 7,
+      "losses": 8,
+      "draws": 0,
+      "pct": ".467",
+      "gb": "3.5"
+    },
+    "한화": {
+      "rank": 7,
+      "wins": 6,
+      "losses": 9,
+      "draws": 0,
+      "pct": ".400",
+      "gb": "4.5"
+    },
+    "롯데": {
+      "rank": 8,
+      "wins": 6,
+      "losses": 9,
+      "draws": 0,
+      "pct": ".400",
+      "gb": "4.5"
+    },
+    "두산": {
+      "rank": 9,
+      "wins": 5,
+      "losses": 9,
+      "draws": 0,
+      "pct": ".357",
+      "gb": "5"
+    },
+    "키움": {
+      "rank": 10,
+      "wins": 4,
+      "losses": 11,
+      "draws": 0,
+      "pct": ".267",
+      "gb": "6.5"
+    }
+  },
+  "lastUpdate": "2026-04-16T11:02:02.637Z"
+}

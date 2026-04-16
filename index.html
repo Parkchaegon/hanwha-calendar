@@ -1709,18 +1709,6 @@ let gameResults = {};
 let standings = {};
 let resultsLastUpdate = '';
 
-// KBO API 팀코드 → 한글 매핑
-const TEAM_CODE_MAP = {
-  'HT': 'KIA', 'OB': '두산', 'LT': '롯데', 'SS': '삼성', 'SK': 'SSG',
-  'WO': '키움', 'HH': '한화', 'LG': 'LG', 'NC': 'NC', 'KT': 'KT',
-  // 역매핑용 한글명
-  'KIA': 'KIA', '두산': '두산', '롯데': '롯데', '삼성': '삼성', 'SSG': 'SSG',
-  '키움': '키움', '한화': '한화',
-};
-
-function mapTeamName(name) {
-  return TEAM_CODE_MAP[name] || name;
-}
 
 function getGameResult(teamKey, dateStr) {
   const dayResults = gameResults[dateStr];
@@ -1746,202 +1734,39 @@ function getGameResult(teamKey, dateStr) {
   return null;
 }
 
-// CORS 프록시를 통한 KBO API 호출 (여러 프록시 폴백)
-async function fetchKboSchedule(monthStr) {
-  const kboUrl = 'https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleList';
-  const body = `leId=1&srId=0&srIdList=0%2C9&seasonId=2026&gameMonth=${monthStr}&teamId=`;
-
-  // 방법 1: corsproxy.io (POST 지원)
+// results.json에서 경기 결과 로드
+async function loadResults() {
   try {
-    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(kboUrl)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body,
+    const res = await fetch('results.json?' + Date.now());
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // results 배열 → gameResults 맵으로 변환
+    gameResults = {};
+    data.results.forEach(r => {
+      if (!gameResults[r.date]) gameResults[r.date] = [];
+      gameResults[r.date].push(r);
     });
-    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
-  } catch (e) { console.log('corsproxy.io failed:', e.message); }
 
-  // 방법 2: thingproxy (POST 지원)
-  try {
-    const res = await fetch(`https://thingproxy.freeboard.io/fetch/${kboUrl}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body,
-    });
-    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
-  } catch (e) { console.log('thingproxy failed:', e.message); }
+    standings = data.standings || {};
 
-  // 방법 3: allorigins (GET 래핑)
-  try {
-    const getUrl = `${kboUrl}?${body}`;
-    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getUrl)}`);
-    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
-  } catch (e) { console.log('allorigins failed:', e.message); }
-
-  // 방법 4: 직접 호출 (같은 도메인이거나 CORS 허용 시)
-  try {
-    const res = await fetch(kboUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body,
-    });
-    if (res.ok) { const t = await res.text(); if (t.includes('<td')) return t; }
-  } catch (e) { console.log('direct fetch failed:', e.message); }
-
-  return null;
-}
-
-// KBO API에서 경기 결과 가져오기
-async function fetchResults() {
-  const btn = document.getElementById('updateResultsBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '업데이트 중...'; }
-
-  const todayDate = new Date();
-  const startMonth = 3; // 3월
-  const endMonth = todayDate.getMonth() + 1; // 현재 월
-
-  const months = [];
-  for (let m = startMonth; m <= endMonth; m++) {
-    months.push(String(m).padStart(2, '0'));
-  }
-
-  const newResults = {};
-  const teamStats = {};
-  TEAM_ORDER.forEach(t => { teamStats[t] = { wins: 0, losses: 0, draws: 0 }; });
-
-  let fetchSuccess = false;
-  for (const mm of months) {
-    const html = await fetchKboSchedule(mm);
-    if (html) {
-      parseResultsHtml(html, newResults, mm);
-      fetchSuccess = true;
-    }
-  }
-
-  if (!fetchSuccess) {
-    alert('경기 결과를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.');
-    if (btn) { btn.disabled = false; btn.textContent = '결과 업데이트'; }
-    return;
-  }
-
-  gameResults = newResults;
-
-  // 팀별 성적 계산
-  Object.values(newResults).flat().forEach(r => {
-    if (r.homeScore === r.awayScore) {
-      teamStats[r.home].draws++;
-      teamStats[r.away].draws++;
-    } else if (r.homeScore > r.awayScore) {
-      teamStats[r.home].wins++;
-      teamStats[r.away].losses++;
-    } else {
-      teamStats[r.away].wins++;
-      teamStats[r.home].losses++;
-    }
-  });
-
-  // 순위 계산
-  const ranked = TEAM_ORDER.map(t => {
-    const s = teamStats[t];
-    const total = s.wins + s.losses;
-    const pct = total > 0 ? (s.wins / total) : 0;
-    return { team: t, ...s, pct };
-  }).sort((a, b) => b.pct - a.pct || b.wins - a.wins);
-
-  const topPct = ranked[0].pct;
-  const topWins = ranked[0].wins;
-  const topLosses = ranked[0].losses;
-
-  standings = {};
-  ranked.forEach((r, i) => {
-    const gamesBack = ((topWins - r.wins) - (topLosses - r.losses)) / 2;
-    standings[r.team] = {
-      rank: i + 1,
-      wins: r.wins,
-      losses: r.losses,
-      draws: r.draws,
-      pct: r.pct > 0 ? '.' + Math.round(r.pct * 1000).toString().padStart(3, '0') : '.000',
-      gb: gamesBack === 0 ? '-' : gamesBack.toString(),
-    };
-  });
-
-  const now = new Date();
-  resultsLastUpdate = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-  renderRecordBanner();
-  renderCalendar();
-
-  if (btn) { btn.disabled = false; btn.textContent = '결과 업데이트'; }
-}
-
-function parseResultsHtml(html, results, monthStr) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const rows = doc.querySelectorAll('tr');
-
-  let currentDate = '';
-
-  rows.forEach(row => {
-    const tds = row.querySelectorAll('td');
-    if (tds.length < 3) return;
-
-    // 날짜 셀 확인 (rowspan이 있는 첫번째 td)
-    let playTd = null;
-    let offset = 0;
-
-    if (tds[0] && tds[0].getAttribute('rowspan')) {
-      // 날짜가 있는 행
-      const dateText = tds[0].textContent.trim();
-      const match = dateText.match(/(\d+)\.(\d+)/);
-      if (match) {
-        currentDate = `2026-${monthStr}-${match[2].padStart(2, '0')}`;
-      }
-      playTd = tds[1];
-      offset = 1;
-    } else {
-      // 같은 날짜의 추가 행
-      playTd = tds[0];
-      offset = 0;
+    if (data.lastUpdate) {
+      const d = new Date(data.lastUpdate);
+      resultsLastUpdate = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
-    if (!playTd || !currentDate) return;
-
-    const playHtml = playTd.innerHTML;
-    const spans = playTd.querySelectorAll(':scope > span');
-    const em = playTd.querySelector('em');
-    if (!em || spans.length < 2) return;
-
-    const awayName = mapTeamName(spans[0].textContent.trim());
-    const homeName = mapTeamName(spans[spans.length - 1].textContent.trim());
-
-    // em 안의 점수 span 확인
-    const scoreSpans = em.querySelectorAll('span');
-    if (scoreSpans.length < 3) return; // 미래 경기 (vs만 있음)
-
-    const leftSpan = scoreSpans[0];
-    const rightSpan = scoreSpans[2];
-
-    // class="same"이면 진행중/0-0이므로 스킵
-    if (leftSpan.classList.contains('same')) return;
-    // win/lose 클래스가 있어야 완료된 경기
-    if (!leftSpan.classList.contains('win') && !leftSpan.classList.contains('lose')) return;
-
-    const awayScore = parseInt(leftSpan.textContent.trim());
-    const homeScore = parseInt(rightSpan.textContent.trim());
-
-    if (isNaN(awayScore) || isNaN(homeScore)) return;
-
-    if (!results[currentDate]) results[currentDate] = [];
-    results[currentDate].push({ away: awayName, home: homeName, awayScore, homeScore });
-  });
+    renderRecordBanner();
+    renderCalendar();
+  } catch (e) {
+    console.log('results.json 로드 실패:', e.message);
+  }
 }
 
 function renderRecordBanner() {
   const s = standings[selectedTeam];
   const banner = document.getElementById('recordBanner');
   if (!s) {
-    banner.innerHTML = `<span style="font-size:13px;color:var(--gray);">경기 결과를 불러오려면 아래 버튼을 클릭하세요</span>
-      <button id="updateResultsBtn" onclick="fetchResults()" style="background:var(--primary);color:white;border:none;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">결과 업데이트</button>`;
+    banner.innerHTML = `<span style="font-size:13px;color:var(--gray);">결과 로딩 중...</span>`;
     return;
   }
 
@@ -1953,7 +1778,7 @@ function renderRecordBanner() {
       ${s.draws ? `<span class="draw">${s.draws}무</span>` : ''}
       <span class="pct">(${s.pct})</span>
     </div>
-    <button id="updateResultsBtn" onclick="fetchResults()" style="background:var(--primary);color:white;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">결과 업데이트</button>
+    <button onclick="loadResults()" style="background:var(--primary);color:white;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">새로고침</button>
     <span style="font-size:11px;color:var(--gray);">${resultsLastUpdate} 갱신</span>
   `;
 }
@@ -2547,6 +2372,7 @@ renderCalendar();
 renderRecordBanner();
 updateDataNotice();
 fetchWeather();
+loadResults();
 </script>
 </body>
 </html>
