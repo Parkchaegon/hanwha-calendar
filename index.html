@@ -187,6 +187,34 @@
   .legend-dot.ticket { background: #3B82F6; }
   .legend-dot.holiday { background: #EF4444; }
 
+  /* Home/Away toggle */
+  .ha-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 6px;
+  }
+
+  .ha-btn {
+    padding: 7px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    background: white;
+    color: var(--gray);
+    transition: all 0.2s;
+  }
+
+  .ha-btn:first-child { border-radius: 10px 0 0 10px; }
+  .ha-btn:last-child { border-radius: 0 10px 10px 0; border-left: none; }
+
+  .ha-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
   /* Filter bar */
   .filter-bar {
     display: flex;
@@ -750,6 +778,10 @@
     <button class="today-btn" onclick="goToday()">오늘</button>
   </div>
 
+  <div class="ha-toggle" id="haToggle">
+    <button class="ha-btn active" data-mode="home" onclick="setHomeAway('home')">홈</button>
+    <button class="ha-btn" data-mode="away" onclick="setHomeAway('away')">원정</button>
+  </div>
   <div class="filter-bar" id="filterBar"></div>
 
   <div class="legend">
@@ -1809,6 +1841,8 @@ function getWeather(venue, date) {
 
 // ===================== STATE =====================
 let selectedTeam = '한화';
+let homeAwayMode = 'home'; // 'home' or 'away'
+const AWAY_VENUES = ['잠실', '수원'];
 let currentYear = 2026;
 let currentMonth = new Date().getMonth();
 let activeVenues = new Set();
@@ -1847,11 +1881,11 @@ function isTargetDay(ds) {
 
 // 선택 구단 경기 가져오기
 function getTeamGames() {
-  if (selectedTeam === '한화') {
-    return GAMES.filter(g => g.home === selectedTeam || g.away === selectedTeam);
+  if (homeAwayMode === 'home') {
+    return GAMES.filter(g => g.home === selectedTeam);
   }
-  // 한화 외 구단은 홈경기만
-  return GAMES.filter(g => g.home === selectedTeam);
+  // 원정: 잠실, 수원만
+  return GAMES.filter(g => g.away === selectedTeam && AWAY_VENUES.includes(g.venue));
 }
 
 // 선택 구단 입장에서 경기 정보
@@ -1918,12 +1952,27 @@ function renderTeamSelector() {
 
 function selectTeam(teamKey) {
   selectedTeam = teamKey;
+  homeAwayMode = 'home';
   applyTeamTheme();
   renderTeamSelector();
+  renderHaToggle();
   buildFilterBar();
   renderCalendar();
   renderRecordBanner();
   updateDataNotice();
+}
+
+function setHomeAway(mode) {
+  homeAwayMode = mode;
+  renderHaToggle();
+  buildFilterBar();
+  renderCalendar();
+}
+
+function renderHaToggle() {
+  document.querySelectorAll('.ha-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === homeAwayMode);
+  });
 }
 
 function applyTeamTheme() {
@@ -1941,18 +1990,18 @@ function applyTeamTheme() {
 
 function buildFilterBar() {
   const venues = getTeamVenues();
-  const homeVenue = TEAMS[selectedTeam].homeVenue;
   activeVenues = new Set(venues);
 
+  if (homeAwayMode === 'home') {
+    // 홈: 필터바 숨김 (홈구장 하나뿐)
+    document.getElementById('filterBar').innerHTML = '';
+    return;
+  }
+
+  // 원정: 잠실/수원 필터
   let html = `<button class="filter-chip active" data-venue="all" onclick="toggleFilter(this)">전체</button>`;
-  venues.sort((a, b) => {
-    if (a === homeVenue) return -1;
-    if (b === homeVenue) return 1;
-    return a.localeCompare(b);
-  });
   venues.forEach(v => {
-    const label = v === homeVenue ? `${v} (홈)` : v;
-    html += `<button class="filter-chip active" data-venue="${v}" onclick="toggleFilter(this)">${label}</button>`;
+    html += `<button class="filter-chip active" data-venue="${v}" onclick="toggleFilter(this)">${v}</button>`;
   });
   document.getElementById('filterBar').innerHTML = html;
 }
