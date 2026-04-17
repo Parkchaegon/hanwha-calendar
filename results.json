@@ -559,6 +559,20 @@
       "home": "한화",
       "awayScore": 6,
       "homeScore": 1
+    },
+    {
+      "date": "2026-04-17",
+      "away": "KIA",
+      "home": "두산",
+      "awayScore": 7,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-17",
+      "away": "키움",
+      "home": "KT",
+      "awayScore": 0,
+      "homeScore": 5
     }
   ],
   "standings": {
@@ -570,15 +584,15 @@
       "pct": ".733",
       "gb": "-"
     },
-    "LG": {
+    "KT": {
       "rank": 2,
-      "wins": 11,
+      "wins": 12,
       "losses": 5,
       "draws": 0,
-      "pct": ".688",
-      "gb": "0.5"
+      "pct": ".706",
+      "gb": "-"
     },
-    "KT": {
+    "LG": {
       "rank": 3,
       "wins": 11,
       "losses": 5,
@@ -586,15 +600,15 @@
       "pct": ".688",
       "gb": "0.5"
     },
-    "SSG": {
+    "KIA": {
       "rank": 4,
-      "wins": 9,
+      "wins": 10,
       "losses": 7,
       "draws": 0,
-      "pct": ".563",
-      "gb": "2.5"
+      "pct": ".588",
+      "gb": "2"
     },
-    "KIA": {
+    "SSG": {
       "rank": 5,
       "wins": 9,
       "losses": 7,
@@ -629,19 +643,19 @@
     "두산": {
       "rank": 9,
       "wins": 5,
-      "losses": 10,
+      "losses": 11,
       "draws": 1,
-      "pct": ".333",
-      "gb": "6"
+      "pct": ".313",
+      "gb": "6.5"
     },
     "키움": {
       "rank": 10,
       "wins": 4,
-      "losses": 12,
+      "losses": 13,
       "draws": 0,
-      "pct": ".250",
-      "gb": "7.5"
+      "pct": ".235",
+      "gb": "8"
     }
   },
-  "lastUpdate": "2026-04-16T16:07:22.393Z"
+  "lastUpdate": "2026-04-17T15:37:12.111Z"
 }
