@@ -783,10 +783,45 @@
       "home": "한화",
       "awayScore": 7,
       "homeScore": 3
+    },
+    {
+      "date": "2026-04-25",
+      "away": "LG",
+      "home": "두산",
+      "awayScore": 7,
+      "homeScore": 5
+    },
+    {
+      "date": "2026-04-25",
+      "away": "KT",
+      "home": "SSG",
+      "awayScore": 1,
+      "homeScore": 3
+    },
+    {
+      "date": "2026-04-25",
+      "away": "롯데",
+      "home": "KIA",
+      "awayScore": 3,
+      "homeScore": 4
+    },
+    {
+      "date": "2026-04-25",
+      "away": "삼성",
+      "home": "키움",
+      "awayScore": 2,
+      "homeScore": 4
+    },
+    {
+      "date": "2026-04-25",
+      "away": "NC",
+      "home": "한화",
+      "awayScore": 1,
+      "homeScore": 8
     }
   ],
   "standings": {
-    "KT": {
+    "LG": {
       "rank": 1,
       "wins": 16,
       "losses": 7,
@@ -794,78 +829,78 @@
       "pct": ".696",
       "gb": "-"
     },
-    "LG": {
+    "KT": {
       "rank": 2,
-      "wins": 15,
-      "losses": 7,
+      "wins": 16,
+      "losses": 8,
       "draws": 0,
-      "pct": ".682",
+      "pct": ".667",
       "gb": "0.5"
     },
     "SSG": {
       "rank": 3,
-      "wins": 14,
+      "wins": 15,
       "losses": 8,
       "draws": 0,
-      "pct": ".636",
-      "gb": "1.5"
+      "pct": ".652",
+      "gb": "1"
     },
     "삼성": {
       "rank": 4,
       "wins": 12,
-      "losses": 9,
+      "losses": 10,
       "draws": 1,
-      "pct": ".571",
-      "gb": "3"
+      "pct": ".545",
+      "gb": "3.5"
     },
     "KIA": {
       "rank": 5,
-      "wins": 11,
+      "wins": 12,
       "losses": 12,
       "draws": 0,
-      "pct": ".478",
-      "gb": "5"
-    },
-    "NC": {
-      "rank": 6,
-      "wins": 10,
-      "losses": 12,
-      "draws": 0,
-      "pct": ".455",
-      "gb": "5.5"
+      "pct": ".500",
+      "gb": "4.5"
     },
     "한화": {
-      "rank": 7,
-      "wins": 9,
+      "rank": 6,
+      "wins": 10,
       "losses": 13,
       "draws": 0,
-      "pct": ".409",
-      "gb": "6.5"
+      "pct": ".435",
+      "gb": "6"
+    },
+    "NC": {
+      "rank": 7,
+      "wins": 10,
+      "losses": 13,
+      "draws": 0,
+      "pct": ".435",
+      "gb": "6"
     },
     "두산": {
       "rank": 8,
       "wins": 9,
-      "losses": 13,
+      "losses": 14,
       "draws": 1,
-      "pct": ".409",
-      "gb": "6.5"
+      "pct": ".391",
+      "gb": "7"
     },
     "키움": {
       "rank": 9,
-      "wins": 8,
+      "wins": 9,
       "losses": 15,
       "draws": 0,
-      "pct": ".348",
-      "gb": "8"
+      "pct": ".375",
+      "gb": "7.5"
     },
     "롯데": {
       "rank": 10,
       "wins": 7,
-      "losses": 15,
+      "losses": 16,
       "draws": 0,
-      "pct": ".318",
-      "gb": "8.5"
+      "pct": ".304",
+      "gb": "9"
     }
   },
-  "lastUpdate": "2026-04-24T15:48:13.269Z"
+  "lastUpdate": "2026-04-25T15:09:16.221Z"
 }
